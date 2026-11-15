@@ -1,0 +1,1728 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2do Parcial — Aplicaciones Distribuidas</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #1565C0;
+      --blue-light: #E3F2FD;
+      --blue-mid:   #90CAF9;
+      --green:      #2E7D32;
+      --green-light:#E8F5E9;
+      --orange:     #E65100;
+      --orange-light:#FFF3E0;
+      --red:        #C62828;
+      --red-light:  #FFEBEE;
+      --purple:     #6A1B9A;
+      --purple-light:#F3E5F5;
+      --teal:       #00695C;
+      --teal-light: #E0F2F1;
+      --bg:         #ECEFF1;
+      --surface:    #FFFFFF;
+      --text:       #0D1B2A;
+      --text-2:     #546E7A;
+      --text-3:     #78909C;
+      --border:     #E0E7EF;
+      --shadow:     0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      color: var(--text);
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--blue);
+      color: white;
+      padding: 32px 24px 24px;
+      text-align: center;
+    }
+    .header-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      opacity: 0.8;
+      margin-bottom: 8px;
+    }
+    .header h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+    .header p  { font-size: 14px; opacity: 0.85; max-width: 540px; margin: 0 auto; }
+
+    /* ── Nav tabs ── */
+    .nav-wrap {
+      background: var(--blue);
+      padding: 0 16px;
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .nav-wrap::-webkit-scrollbar { display: none; }
+    .tab {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.65);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 12px 16px;
+      cursor: pointer;
+      white-space: nowrap;
+      border-bottom: 3px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab:hover  { color: rgba(255,255,255,0.9); }
+    .tab.active { color: white; border-bottom-color: white; }
+
+    /* ── Layout ── */
+    .content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .card-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .card-title { font-size: 16px; font-weight: 700; }
+    .card-subtitle { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+
+    /* ── Section heading ── */
+    .section-heading {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-2);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin: 24px 0 10px;
+    }
+    .section-heading:first-child { margin-top: 0; }
+
+    /* ── Chips / badges ── */
+    .chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .chip.blue   { background: var(--blue-light);   color: var(--blue); }
+    .chip.green  { background: var(--green-light);  color: var(--green); }
+    .chip.orange { background: var(--orange-light); color: var(--orange); }
+    .chip.red    { background: var(--red-light);    color: var(--red); }
+    .chip.purple { background: var(--purple-light); color: var(--purple); }
+    .chip.teal   { background: var(--teal-light);   color: var(--teal); }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      background: #F5F7FA;
+      color: var(--text-2);
+      font-weight: 700;
+      text-align: left;
+      padding: 10px 12px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    td { padding: 10px 12px; border-top: 1px solid var(--border); vertical-align: top; }
+    tr:hover td { background: #FAFBFC; }
+
+    /* ── Code block ── */
+    .code-block {
+      background: #1A1E2E;
+      color: #E8EAF6;
+      border-radius: 12px;
+      padding: 16px;
+      font-family: 'Consolas', 'Fira Code', monospace;
+      font-size: 12.5px;
+      line-height: 1.6;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+    .code-block .kw  { color: #82B1FF; }
+    .code-block .fn  { color: #69F0AE; }
+    .code-block .str { color: #FFCC80; }
+    .code-block .cmt { color: #546E7A; font-style: italic; }
+    .code-block .bad { background: rgba(198,40,40,0.3); border-radius: 3px; padding: 1px 3px; }
+    .code-block .good{ background: rgba(46,125,50,0.3); border-radius: 3px; padding: 1px 3px; }
+    .code-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .code-label.bad-label  { color: var(--red); }
+    .code-label.good-label { color: var(--green); }
+
+    /* ── Comparison ── */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 12px 0;
+    }
+    @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } }
+
+    /* ── Antipattern row ── */
+    .anti-row {
+      border-left: 4px solid var(--red);
+      background: var(--red-light);
+      border-radius: 0 10px 10px 0;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .anti-row.ok {
+      border-left-color: var(--green);
+      background: var(--green-light);
+    }
+    .anti-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .anti-desc  { font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.5; }
+
+    /* ── Q&A ── */
+    .qa-item {
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .qa-q {
+      padding: 14px 16px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      background: var(--surface);
+      transition: background 0.15s;
+      user-select: none;
+    }
+    .qa-q:hover { background: #F5F7FA; }
+    .qa-q .arrow { font-size: 16px; transition: transform 0.2s; color: var(--text-3); }
+    .qa-q.open .arrow { transform: rotate(180deg); }
+    .qa-a {
+      display: none;
+      padding: 14px 16px;
+      font-size: 13px;
+      color: var(--text-2);
+      line-height: 1.6;
+      border-top: 1px solid var(--border);
+      background: #FAFBFC;
+    }
+    .qa-a.show { display: block; }
+    .qa-a strong { color: var(--text); }
+    .qa-a ul { padding-left: 18px; margin-top: 6px; }
+    .qa-a li { margin-bottom: 4px; }
+
+    /* ── Checklist ── */
+    .checklist { list-style: none; }
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .checklist li input[type=checkbox] {
+      width: 16px; height: 16px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      accent-color: var(--blue);
+      cursor: pointer;
+    }
+    .checklist li label { cursor: pointer; }
+    .checklist li.done label { text-decoration: line-through; color: var(--text-3); }
+
+    /* ── Diagram ── */
+    .diagram {
+      background: #F5F7FA;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.8;
+      color: var(--text-2);
+      overflow-x: auto;
+    }
+
+    /* ── Timeline ── */
+    .timeline { position: relative; padding-left: 28px; }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 8px; top: 0; bottom: 0;
+      width: 2px;
+      background: var(--border);
+    }
+    .tl-item {
+      position: relative;
+      margin-bottom: 14px;
+    }
+    .tl-item::before {
+      content: '';
+      position: absolute;
+      left: -24px; top: 4px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--blue);
+      border: 2px solid white;
+      box-shadow: 0 0 0 2px var(--blue-mid);
+    }
+    .tl-time  { font-size: 11px; font-weight: 700; color: var(--blue); margin-bottom: 2px; }
+    .tl-title { font-size: 13px; font-weight: 700; }
+    .tl-desc  { font-size: 12px; color: var(--text-2); margin-top: 2px; line-height: 1.5; }
+
+    /* ── Alert banner ── */
+    .alert {
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 13px;
+      line-height: 1.5;
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .alert.info   { background: var(--blue-light);   color: #0D47A1; border-left: 4px solid var(--blue); }
+    .alert.warn   { background: var(--orange-light); color: #BF360C; border-left: 4px solid var(--orange); }
+    .alert.danger { background: var(--red-light);    color: #B71C1C; border-left: 4px solid var(--red); }
+    .alert.ok     { background: var(--green-light);  color: #1B5E20; border-left: 4px solid var(--green); }
+
+    /* ── Practice task ── */
+    .task-card {
+      background: var(--surface);
+      border-radius: 16px;
+      border: 2px solid var(--border);
+      padding: 18px;
+      margin-bottom: 14px;
+      transition: border-color 0.2s;
+    }
+    .task-card:hover { border-color: var(--blue-mid); }
+    .task-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .task-title { font-size: 15px; font-weight: 700; }
+    .task-meta  { font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.5; }
+    .task-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+
+    /* ── Inline code ── */
+    code {
+      background: #F0F4F8;
+      color: var(--blue);
+      padding: 1px 6px;
+      border-radius: 5px;
+      font-family: 'Consolas', monospace;
+      font-size: 92%;
+    }
+
+    /* ── Divider ── */
+    hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+    /* ── Misc ── */
+    p { line-height: 1.6; font-size: 13px; color: var(--text-2); }
+    ul { padding-left: 20px; }
+    li { font-size: 13px; line-height: 1.7; color: var(--text-2); }
+    strong { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-label">UADE · Aplicaciones Distribuidas</div>
+  <h1>2do Parcial — Material de Estudio</h1>
+  <p>React · Kotlin/Android · Antipatrones · Arquitectura · Sensores · SQL</p>
+</div>
+
+<!-- NAV TABS -->
+<div class="nav-wrap">
+  <button class="tab active" onclick="showSection('estrategia')">⏱ Estrategia</button>
+  <button class="tab" onclick="showSection('antipatrones')">🚫 Antipatrones</button>
+  <button class="tab" onclick="showSection('arquitectura')">🏛 Arquitectura</button>
+  <button class="tab" onclick="showSection('kotlin')">🤖 Kotlin</button>
+  <button class="tab" onclick="showSection('react')">⚛ React</button>
+  <button class="tab" onclick="showSection('sql')">🗄 SQL</button>
+  <button class="tab" onclick="showSection('sensores')">📡 Sensores</button>
+  <button class="tab" onclick="showSection('teoria')">📋 Teoría Q&amp;A</button>
+  <button class="tab" onclick="showSection('practicar')">🎯 Practicar</button>
+  <button class="tab" onclick="showSection('examen')">📝 Examen Real</button>
+</div>
+
+<div class="content">
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- ESTRATEGIA                                     -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div id="estrategia" class="section active">
+
+    <div class="alert warn">
+      <span>⚠️</span>
+      <div><strong>Clave del examen:</strong> lo más importante es el punto A (2 requerimientos funcionales). El B es solo si sobra tiempo. Entregá A completo y que funcione.</div>
+    </div>
+
+    <div class="section-heading">Plan de 90 minutos</div>
+    <div class="card">
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-time">0 – 10 min</div>
+          <div class="tl-title">Leer todo el código</div>
+          <div class="tl-desc">No toques nada todavía. Entendé la estructura: qué hace cada archivo, qué tecnologías usa, dónde está la lógica principal.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-time">10 – 20 min</div>
+          <div class="tl-title">Anotar antipatrones</div>
+          <div class="tl-desc">Marcá en papel (para la hoja de teoría) los problemas que ves: lógica en el componente, queries en hilo principal, listeners sin desregistrar, etc.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-time">20 – 70 min</div>
+          <div class="tl-title">Implementar requerimiento A</div>
+          <div class="tl-desc">Los 2 requerimientos funcionales. Chequeá que compilen y funcionen antes de seguir. Hacé commits frecuentes.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-time">70 – 85 min</div>
+          <div class="tl-title">Parte B (si sobra)</div>
+          <div class="tl-desc">Mejoras de arquitectura: mover lógica a ViewModel/hook, extraer constantes, agregar cleanup a sensores. Solo si A ya está.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-time">85 – 90 min</div>
+          <div class="tl-title">Verificar entrega</div>
+          <div class="tl-desc">Push al repo, copiá el link, verificá que sea público. Que compila. Que la app corre.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-heading">Elección de plataforma</div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <tr>
+            <th>Criterio</th>
+            <th><span class="chip blue">React</span></th>
+            <th><span class="chip orange">Kotlin</span></th>
+          </tr>
+          <tr>
+            <td><strong>Feedback visual</strong></td>
+            <td>Inmediato en el browser</td>
+            <td>Necesita emulador o dispositivo</td>
+          </tr>
+          <tr>
+            <td><strong>Tiempo de build</strong></td>
+            <td>Segundos (Vite/CRA)</td>
+            <td>2–5 min (Gradle)</td>
+          </tr>
+          <tr>
+            <td><strong>Agregar feature</strong></td>
+            <td>Componente + estado = 20 líneas</td>
+            <td>Layout XML + Activity/ViewModel</td>
+          </tr>
+          <tr>
+            <td><strong>Errores</strong></td>
+            <td>Consola del browser, claros</td>
+            <td>Gradle puede ser críptico</td>
+          </tr>
+          <tr>
+            <td><strong>Elegí Kotlin si...</strong></td>
+            <td>—</td>
+            <td>Ya lo usás seguido y Android Studio está configurado</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="section-heading">Cómo leer código rápido</div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#E3F2FD">⚛</div>
+        <div><div class="card-title">React</div><div class="card-subtitle">Orden de lectura</div></div>
+      </div>
+      <ol style="padding-left:20px; font-size:13px; line-height:2">
+        <li><code>package.json</code> → qué dependencias usa (Axios, Router, Zustand, SQLite…)</li>
+        <li>Estructura de carpetas → <code>components/</code>, <code>screens/</code>, <code>hooks/</code>, <code>services/</code></li>
+        <li><code>App.tsx</code> / <code>App.jsx</code> → entrada y routing</li>
+        <li>Componente más grande → ahí suelen estar los antipatrones</li>
+        <li>¿Dónde se llama a la API? → ¿está en el componente? → antipatrón</li>
+      </ol>
+      <hr>
+      <div class="card-header" style="margin-top:12px">
+        <div class="card-icon" style="background:#FFF3E0">🤖</div>
+        <div><div class="card-title">Kotlin / Android</div><div class="card-subtitle">Orden de lectura</div></div>
+      </div>
+      <ol style="padding-left:20px; font-size:13px; line-height:2">
+        <li><code>build.gradle</code> → dependencias, versión SDK mínima</li>
+        <li><code>AndroidManifest.xml</code> → permisos declarados, servicios, actividades</li>
+        <li><code>MainActivity</code> → si tiene 300+ líneas, hay God Activity</li>
+        <li>¿Hay <code>ViewModel</code>? → si no hay, todo está en la Activity</li>
+        <li>¿Hay queries de BD o llamadas de red en el hilo principal?</li>
+      </ol>
+    </div>
+
+    <div class="section-heading">Checklist de entrega</div>
+    <div class="card">
+      <ul class="checklist" id="checklist">
+        <li><input type="checkbox" id="c1" onchange="markDone(this)"><label for="c1">La app compila sin errores</label></li>
+        <li><input type="checkbox" id="c2" onchange="markDone(this)"><label for="c2">Los 2 requerimientos de A funcionan en el flujo completo</label></li>
+        <li><input type="checkbox" id="c3" onchange="markDone(this)"><label for="c3">Hiciste al menos un commit por cada requerimiento</label></li>
+        <li><input type="checkbox" id="c4" onchange="markDone(this)"><label for="c4">El último push llegó al repo remoto</label></li>
+        <li><input type="checkbox" id="c5" onchange="markDone(this)"><label for="c5">El repo es público (o compartido con el docente)</label></li>
+        <li><input type="checkbox" id="c6" onchange="markDone(this)"><label for="c6">Copiaste el link correcto del repo</label></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- ANTIPATRONES                                   -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div id="antipatrones" class="section">
+
+    <div class="alert info">
+      <span>💡</span>
+      <div>El examen tiene código con antipatrones intencionales. Tu trabajo: <strong>identificarlos, nombrarlos, y explicar cómo se arreglan</strong>.</div>
+    </div>
+
+    <div class="section-heading">Kotlin / Android</div>
+
+    <div class="anti-row">
+      <div class="anti-title">🔴 God Activity</div>
+      <div class="anti-desc"><strong>Cómo se ve:</strong> una Activity con 300+ líneas, lógica de negocio, acceso a BD, llamadas de red y UI mezcladas.<br>
+      <strong>Por qué es malo:</strong> imposible de testear, mantener o reusar. Viola el Principio de Responsabilidad Única (SRP).<br>
+      <strong>Cómo se arregla:</strong> extraer lógica a <code>ViewModel</code>, acceso a datos a un <code>Repository</code>, dejar la Activity solo con código de UI.</div>
+    </div>
+
+    <div class="anti-row">
+      <div class="anti-title">🔴 Red / BD en el hilo principal (Main Thread)</div>
+      <div class="anti-desc"><strong>Cómo se ve:</strong> <code>OkHttp</code>, <code>Volley</code>, o <code>db.query()</code> llamados directamente en <code>onCreate</code> o en un click handler sin coroutine.<br>
+      <strong>Por qué es malo:</strong> bloquea el UI thread. Si tarda más de 5 segundos, Android lanza ANR (App Not Responding). Desde Android 3.0, las llamadas de red en main thread crashean directamente.<br>
+      <strong>Cómo se arregla:</strong> <code>viewModelScope.launch(Dispatchers.IO) { ... }</code> o <code>suspend fun</code> en Room.</div>
+    </div>
+
+    <div class="anti-row">
+      <div class="anti-title">🔴 Sensor / Listener sin desregistrar</div>
+      <div class="anti-desc"><strong>Cómo se ve:</strong> <code>sensorManager.registerListener(this, sensor, ...)</code> en <code>onCreate</code> pero sin <code>unregisterListener</code> en <code>onPause</code> o <code>onDestroy</code>.<br>
+      <strong>Por qué es malo:</strong> memory leak. El sensor mantiene una referencia a la Activity, que no puede ser recolectada por el GC aunque la Activity esté destruida. Además consume batería innecesariamente.<br>
+      <strong>Cómo se arregla:</strong> desregistrar en <code>onPause()</code>.</div>
+    </div>
+
+    <div class="anti-row">
+      <div class="anti-title">🔴 Magic numbers / strings</div>
+      <div class="anti-desc"><strong>Cómo se ve:</strong> <code>if (battery &lt; 20)</code>, <code>val url = "http://192.168.1.1/api"</code> esparcidos en el código.<br>
+      <strong>Por qué es malo:</strong> semántica perdida, difícil de mantener. Si el valor cambia, hay que buscarlo en todo el código.<br>
+      <strong>Cómo se arregla:</strong> extraer a <code>companion object</code> con <code>const val BATTERY_LOW_THRESHOLD = 20</code>.</div>
+    </div>
+
+    <div class="anti-row">
+      <div class="anti-title">🔴 Hardcoded credentials / URLs</div>
+      <div class="anti-desc"><strong>Cómo se ve:</strong> <code>val apiKey = "sk-abc123"</code> o URL de producción en el código fuente.<br>
+      <strong>Por qué es malo:</strong> riesgo de seguridad grave si el repo es público. Las credenciales quedan en el historial de git.<br>
+      <strong>Cómo se arregla:</strong> usar <code>BuildConfig</code> con variables en <code>local.properties</code> (que va en <code>.gitignore</code>), o variables de entorno.</div>
+    </div>
+
+    <div class="section-heading">React</div>
+
+    <div class="anti-row">
+      <div class="anti-title">🔴 Fat Component (God Component)</div>
+      <div class="anti-desc"><strong>Cómo se ve:</strong> un componente de 250+ líneas con <code>useEffect</code> de red, lógica de negocio, manejo de formularios y render todo junto.<br>
+      <strong>Por qué es malo:</strong> mismo problema que God Activity. Imposible de reusar o testear.<br>
+      <strong>Cómo se arregla:</strong> extraer lógica a custom hooks (<code>usePatients()</code>), extraer secciones del render a subcomponentes.</div>
+    </div>
+
+    <div class="anti-row">
+      <div class="anti-title">🔴 Fetch directo en componente</div>
+      <div class="anti-desc"><strong>Cómo se ve:</strong> <code>fetch('/api/data')</code> o <code>axios.get(...)</code> dentro de <code>useEffect</code> directamente en el componente, no en un servicio.<br>
+      <strong>Por qué es malo:</strong> lógica de datos acoplada a la UI. Si la API cambia, hay que buscar en todos los componentes.<br>
+      <strong>Cómo se arregla:</strong> extraer a un custom hook <code>useData()</code> o a un archivo <code>services/api.ts</code>.</div>
+    </div>
+
+    <div class="anti-row">
+      <div class="anti-title">🔴 useEffect sin cleanup</div>
+      <div class="anti-desc"><strong>Cómo se ve:</strong> <code>useEffect</code> que abre una suscripción, setea un intervalo o agrega un event listener, pero no retorna una función de limpieza.<br>
+      <strong>Por qué es malo:</strong> memory leak. La suscripción/intervalo sigue activa después de que el componente se desmonta. Puede causar "setState on unmounted component".<br>
+      <strong>Cómo se arregla:</strong> <code>return () => { subscription.unsubscribe(); clearInterval(id); }</code>.</div>
+    </div>
+
+    <div class="anti-row">
+      <div class="anti-title">🔴 Key ausente o incorrecta en listas</div>
+      <div class="anti-desc"><strong>Cómo se ve:</strong> <code>items.map(item => &lt;Item /&gt;)</code> sin <code>key</code>, o <code>key={index}</code>.<br>
+      <strong>Por qué es malo:</strong> React no puede identificar qué elemento cambió, lo que causa re-renders incorrectos y bugs de estado.<br>
+      <strong>Cómo se arregla:</strong> <code>key={item.id}</code> con un identificador único y estable.</div>
+    </div>
+
+    <div class="anti-row">
+      <div class="anti-title">🔴 Prop drilling excesivo</div>
+      <div class="anti-desc"><strong>Cómo se ve:</strong> un prop pasado por 3+ niveles de componentes solo para que el último hijo lo use.<br>
+      <strong>Por qué es malo:</strong> todos los componentes intermedios quedan acoplados. Un cambio de tipo o nombre obliga a tocar múltiples archivos.<br>
+      <strong>Cómo se arregla:</strong> <code>Context</code> de React, Zustand, o Redux para estado global.</div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- ARQUITECTURA                                   -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div id="arquitectura" class="section">
+
+    <div class="section-heading">MVVM — Model View ViewModel</div>
+    <div class="card">
+      <p>Patrón de arquitectura estándar en Android moderno (y usado en React con custom hooks).</p>
+      <div class="diagram" style="margin-top:14px">
+┌─────────────────────────────────────────────────────┐
+│                  UI LAYER                           │
+│  Activity / Fragment / Composable / Componente React│
+│  Solo: renderizar estado, capturar eventos de UI    │
+└──────────────┬──────────────────────────────────────┘
+               │ observa LiveData / StateFlow / useState
+               ▼
+┌─────────────────────────────────────────────────────┐
+│              VIEWMODEL / CUSTOM HOOK                │
+│  Lógica de presentación, transformación de datos    │
+│  Sobrevive rotaciones (Android). NO tiene ref a UI  │
+└──────────────┬──────────────────────────────────────┘
+               │ llama funciones
+               ▼
+┌─────────────────────────────────────────────────────┐
+│              REPOSITORY                             │
+│  Abstrae el origen de los datos.                    │
+│  El ViewModel NO sabe si vienen de red o de caché   │
+└───────┬────────────────────────┬────────────────────┘
+        │                        │
+        ▼                        ▼
+┌───────────────┐      ┌─────────────────────┐
+│  API remota   │      │  Base de datos local │
+│  (Retrofit/   │      │  (Room / SQLite)     │
+│   Axios)      │      │                      │
+└───────────────┘      └─────────────────────┘
+      </div>
+      <div style="margin-top:14px">
+        <div class="anti-row ok" style="margin-bottom:8px">
+          <div class="anti-title">✅ ¿Por qué MVVM?</div>
+          <div class="anti-desc">
+            <strong>Testeable:</strong> podés testear el ViewModel sin UI.<br>
+            <strong>Sobrevive rotaciones:</strong> el ViewModel no se destruye al rotar (Android).<br>
+            <strong>Separación de responsabilidades:</strong> cada capa tiene una sola responsabilidad.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-heading">Repository Pattern</div>
+    <div class="card">
+      <p>El Repository es la única fuente de verdad para los datos. Decide si traer de red o de caché local.</p>
+      <div class="code-block" style="margin-top:12px">
+<span class="cmt">// Repository — abstrae el origen</span>
+<span class="kw">class</span> <span class="fn">PatientRepository</span>(
+    <span class="kw">private val</span> api: PatientApi,
+    <span class="kw">private val</span> db: PatientDao
+) {
+    <span class="kw">suspend fun</span> <span class="fn">getPatients</span>(): List&lt;Patient&gt; {
+        <span class="kw">return try</span> {
+            <span class="kw">val</span> remote = api.fetchPatients()
+            db.insertAll(remote)   <span class="cmt">// cachear en local</span>
+            remote
+        } <span class="kw">catch</span> (e: Exception) {
+            db.getAll()            <span class="cmt">// fallback a local</span>
+        }
+    }
+}
+      </div>
+    </div>
+
+    <div class="section-heading">Principios SOLID que más importan</div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <tr><th>Principio</th><th>Qué significa</th><th>Ejemplo de violación</th></tr>
+          <tr>
+            <td><strong>S</strong> — Single Responsibility</td>
+            <td>Una clase = una razón para cambiar</td>
+            <td>God Activity: cambia si cambia la UI, la red, o la BD</td>
+          </tr>
+          <tr>
+            <td><strong>O</strong> — Open/Closed</td>
+            <td>Abierto para extensión, cerrado para modificación</td>
+            <td>Agregar un sensor requiere modificar la Activity entera</td>
+          </tr>
+          <tr>
+            <td><strong>D</strong> — Dependency Inversion</td>
+            <td>Dependé de abstracciones, no de implementaciones</td>
+            <td>ViewModel instancia <code>new Retrofit()</code> directamente</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- KOTLIN                                         -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div id="kotlin" class="section">
+
+    <div class="section-heading">Ciclo de vida de Activity</div>
+    <div class="card">
+      <div class="diagram">
+                    onCreate()
+                        │
+                    onStart()
+                        │
+                    onResume()  ◄──── app visible y en primer plano
+                        │
+                   [usuario usa la app]
+                        │
+                    onPause()   ◄──── otra app en primer plano
+                        │
+                    onStop()    ◄──── app no visible
+                        │
+                    onDestroy() ◄──── app terminada
+
+        Al rotar pantalla: onPause → onStop → onDestroy → onCreate → onStart → onResume
+      </div>
+      <hr>
+      <div style="font-size:13px; margin-top:12px">
+        <strong>¿Dónde hacer qué?</strong>
+        <ul style="margin-top:8px">
+          <li><code>onCreate</code> → inicializar ViewModel, configurar UI, binding</li>
+          <li><code>onResume</code> → registrar sensores, iniciar updates de UI</li>
+          <li><code>onPause</code> → <strong>desregistrar sensores</strong>, pausar animaciones</li>
+          <li><code>onDestroy</code> → liberar recursos que no se liberaron antes</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section-heading">Coroutines — operaciones asíncronas</div>
+    <div class="card">
+      <div class="compare">
+        <div>
+          <div class="code-label bad-label">❌ MAL — red en main thread</div>
+          <div class="code-block">
+<span class="kw">override fun</span> <span class="fn">onCreate</span>(...) {
+    <span class="cmt">// CRASH en Android moderno</span>
+    <span class="kw">val</span> data = <span class="bad">api.getData()</span>
+    updateUI(data)
+}
+          </div>
+        </div>
+        <div>
+          <div class="code-label good-label">✅ BIEN — con coroutine</div>
+          <div class="code-block">
+<span class="kw">override fun</span> <span class="fn">onCreate</span>(...) {
+    viewModel.data.<span class="fn">observe</span>(this) { data ->
+        updateUI(data)
+    }
+}
+
+<span class="cmt">// En el ViewModel:</span>
+<span class="fn">viewModelScope</span>.<span class="fn">launch</span> {
+    <span class="kw">val</span> data = <span class="good">withContext(Dispatchers.IO)</span> {
+        api.<span class="fn">getData</span>()
+    }
+    _data.value = data
+}
+          </div>
+        </div>
+      </div>
+      <hr>
+      <p><strong>Dispatchers:</strong> <code>Dispatchers.Main</code> = UI thread. <code>Dispatchers.IO</code> = red y disco. <code>Dispatchers.Default</code> = CPU intensivo.</p>
+    </div>
+
+    <div class="section-heading">Room — BD local correcta</div>
+    <div class="card">
+      <div class="code-block">
+<span class="cmt">// 1. Entity (tabla)</span>
+<span class="kw">@Entity</span>(tableName = <span class="str">"patients"</span>)
+<span class="kw">data class</span> <span class="fn">Patient</span>(
+    <span class="kw">@PrimaryKey val</span> id: Int,
+    <span class="kw">val</span> name: String,
+    <span class="kw">val</span> room: String
+)
+
+<span class="cmt">// 2. DAO (queries)</span>
+<span class="kw">@Dao interface</span> <span class="fn">PatientDao</span> {
+    <span class="kw">@Query</span>(<span class="str">"SELECT * FROM patients"</span>)
+    <span class="kw">suspend fun</span> <span class="fn">getAll</span>(): List&lt;Patient&gt;  <span class="cmt">// suspend → no puede correr en main thread</span>
+
+    <span class="kw">@Insert</span>(<span class="fn">onConflict</span> = OnConflictStrategy.REPLACE)
+    <span class="kw">suspend fun</span> <span class="fn">insertAll</span>(patients: List&lt;Patient&gt;)
+}
+
+<span class="cmt">// 3. Database</span>
+<span class="kw">@Database</span>(entities = [Patient::<span class="kw">class</span>], version = 1)
+<span class="kw">abstract class</span> <span class="fn">AppDatabase</span> : RoomDatabase() {
+    <span class="kw">abstract fun</span> <span class="fn">patientDao</span>(): PatientDao
+}
+      </div>
+      <div class="anti-row ok" style="margin-top:12px">
+        <div class="anti-title">✅ Room vs SQLite directo</div>
+        <div class="anti-desc">Room verifica queries en <strong>tiempo de compilación</strong>. SQLite directo falla en runtime. Room integra con Flow/LiveData para reactivity automática. Room obliga a que los métodos del DAO sean <code>suspend</code>, forzando ejecución fuera del main thread.</div>
+      </div>
+    </div>
+
+    <div class="section-heading">ViewModel — supervivencia a rotaciones</div>
+    <div class="card">
+      <div class="code-block">
+<span class="kw">class</span> <span class="fn">PatientViewModel</span>(
+    <span class="kw">private val</span> repository: PatientRepository
+) : ViewModel() {
+
+    <span class="kw">private val</span> _patients = MutableStateFlow&lt;List&lt;Patient&gt;&gt;(emptyList())
+    <span class="kw">val</span> patients: StateFlow&lt;List&lt;Patient&gt;&gt; = _patients.asStateFlow()
+
+    <span class="kw">fun</span> <span class="fn">loadPatients</span>() {
+        viewModelScope.<span class="fn">launch</span> {
+            _patients.value = repository.<span class="fn">getPatients</span>()
+        }
+    }
+
+    <span class="cmt">// onCleared() se llama cuando el ViewModel se destruye</span>
+    <span class="kw">override fun</span> <span class="fn">onCleared</span>() { <span class="kw">super</span>.<span class="fn">onCleared</span>() }
+}
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- REACT                                          -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div id="react" class="section">
+
+    <div class="section-heading">Hooks esenciales</div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <tr><th>Hook</th><th>Para qué sirve</th><th>Error común</th></tr>
+          <tr>
+            <td><code>useState</code></td>
+            <td>Estado local del componente</td>
+            <td>Mutar el estado directamente en vez de usar el setter</td>
+          </tr>
+          <tr>
+            <td><code>useEffect</code></td>
+            <td>Side effects: fetch, suscripciones, timers</td>
+            <td>No retornar cleanup → memory leak</td>
+          </tr>
+          <tr>
+            <td><code>useContext</code></td>
+            <td>Consumir Context (estado global)</td>
+            <td>Usarlo para estado muy local que debería ser <code>useState</code></td>
+          </tr>
+          <tr>
+            <td><code>useRef</code></td>
+            <td>Referencia a DOM o valor que no dispara re-render</td>
+            <td>Usarlo para estado que sí debería causar re-render</td>
+          </tr>
+          <tr>
+            <td><code>useMemo</code> / <code>useCallback</code></td>
+            <td>Memoización para evitar re-cálculos</td>
+            <td>Usarlos prematuramente sin necesidad real</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="section-heading">useEffect — los 3 patrones</div>
+    <div class="card">
+      <div class="code-block">
+<span class="cmt">// 1. Sin dependencias → corre cada render (casi nunca querés esto)</span>
+<span class="fn">useEffect</span>(() => { doSomething(); });
+
+<span class="cmt">// 2. Array vacío → corre UNA sola vez al montar (equivale a componentDidMount)</span>
+<span class="fn">useEffect</span>(() => { fetchData(); }, []);
+
+<span class="cmt">// 3. Con dependencias → corre cuando cambian esas variables</span>
+<span class="fn">useEffect</span>(() => { fetchUser(userId); }, [userId]);
+
+<span class="cmt">// ✅ CON CLEANUP (obligatorio para suscripciones/timers)</span>
+<span class="fn">useEffect</span>(() => {
+    <span class="kw">const</span> interval = <span class="fn">setInterval</span>(() => fetchStatus(), 5000);
+    <span class="kw">return</span> () => <span class="fn">clearInterval</span>(interval);  <span class="cmt">// cleanup</span>
+}, []);
+      </div>
+    </div>
+
+    <div class="section-heading">Custom Hook — cómo extraer lógica</div>
+    <div class="card">
+      <div class="compare">
+        <div>
+          <div class="code-label bad-label">❌ MAL — lógica en componente</div>
+          <div class="code-block">
+<span class="kw">function</span> <span class="fn">PatientList</span>() {
+    <span class="kw">const</span> [data, setData] = <span class="fn">useState</span>([]);
+    <span class="kw">const</span> [loading, setLoading] = <span class="fn">useState</span>(<span class="bad">true</span>);
+
+    <span class="fn">useEffect</span>(() => {
+        <span class="fn">fetch</span>(<span class="str">'/api/patients'</span>)
+          .<span class="fn">then</span>(r => r.<span class="fn">json</span>())
+          .<span class="fn">then</span>(setData)
+          .<span class="fn">finally</span>(() => setLoading(<span class="bad">false</span>));
+    }, []);
+
+    <span class="kw">return</span> &lt;div&gt;{data.<span class="fn">map</span>(...)}&lt;/div&gt;;
+}
+          </div>
+        </div>
+        <div>
+          <div class="code-label good-label">✅ BIEN — custom hook</div>
+          <div class="code-block">
+<span class="cmt">// hooks/usePatients.ts</span>
+<span class="kw">function</span> <span class="fn">usePatients</span>() {
+    <span class="kw">const</span> [data, setData] = <span class="fn">useState</span>([]);
+    <span class="kw">const</span> [loading, setLoading] = <span class="fn">useState</span>(<span class="good">true</span>);
+
+    <span class="fn">useEffect</span>(() => {
+        <span class="fn">fetchPatients</span>().<span class="fn">then</span>(setData)
+          .<span class="fn">finally</span>(() => setLoading(<span class="good">false</span>));
+    }, []);
+
+    <span class="kw">return</span> { data, loading };
+}
+
+<span class="cmt">// componente limpio</span>
+<span class="kw">function</span> <span class="fn">PatientList</span>() {
+    <span class="kw">const</span> { data, loading } = <span class="fn">usePatients</span>();
+    <span class="kw">return</span> &lt;div&gt;{data.<span class="fn">map</span>(...)}&lt;/div&gt;;
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-heading">Context — estado global sin prop drilling</div>
+    <div class="card">
+      <div class="code-block">
+<span class="cmt">// 1. Crear contexto</span>
+<span class="kw">const</span> AuthContext = React.<span class="fn">createContext</span>(null);
+
+<span class="cmt">// 2. Provider en App.tsx</span>
+<span class="kw">function</span> <span class="fn">App</span>() {
+    <span class="kw">const</span> [user, setUser] = <span class="fn">useState</span>(null);
+    <span class="kw">return</span> (
+        &lt;AuthContext.Provider value={{ user, setUser }}&gt;
+            &lt;Router /&gt;
+        &lt;/AuthContext.Provider&gt;
+    );
+}
+
+<span class="cmt">// 3. Consumir en cualquier componente hijo</span>
+<span class="kw">function</span> <span class="fn">Header</span>() {
+    <span class="kw">const</span> { user } = <span class="fn">useContext</span>(AuthContext);
+    <span class="kw">return</span> &lt;span&gt;{user?.name}&lt;/span&gt;;
+}
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SQL                                            -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div id="sql" class="section">
+
+    <div class="alert danger">
+      <span>🚨</span>
+      <div><strong>Regla fundamental:</strong> nunca ejecutes queries SQL en el hilo principal (UI thread). Siempre en un hilo de background.</div>
+    </div>
+
+    <div class="section-heading">Operaciones básicas</div>
+    <div class="card">
+      <div class="code-block">
+<span class="cmt">-- Seleccionar</span>
+SELECT * FROM patients WHERE status = <span class="str">'active'</span>;
+SELECT id, name FROM patients ORDER BY name ASC LIMIT 10;
+
+<span class="cmt">-- Insertar</span>
+INSERT INTO patients (id, name, room) VALUES (1, <span class="str">'Juan'</span>, <span class="str">'3B'</span>);
+
+<span class="cmt">-- Actualizar</span>
+UPDATE patients SET room = <span class="str">'4A'</span> WHERE id = 1;
+
+<span class="cmt">-- Eliminar</span>
+DELETE FROM patients WHERE id = 1;
+
+<span class="cmt">-- JOIN</span>
+SELECT p.name, d.description
+FROM patients p
+JOIN diagnoses d ON p.id = d.patient_id;
+      </div>
+    </div>
+
+    <div class="section-heading">SQLite directo vs Room (Android)</div>
+    <div class="card">
+      <div class="compare">
+        <div>
+          <div class="code-label bad-label">❌ SQLite directo — antipatrón</div>
+          <div class="code-block">
+<span class="cmt">// En la Activity, hilo principal</span>
+<span class="kw">val</span> db = <span class="bad">openOrCreateDatabase</span>(<span class="str">"app.db"</span>, ...)
+<span class="kw">val</span> cursor = db.<span class="bad">rawQuery</span>(
+    <span class="str">"SELECT * FROM patients"</span>, null
+)
+<span class="cmt">// Cursor manual, sin type safety</span>
+<span class="kw">while</span> (cursor.moveToNext()) {
+    <span class="kw">val</span> name = cursor.<span class="fn">getString</span>(0)
+}
+          </div>
+        </div>
+        <div>
+          <div class="code-label good-label">✅ Room — correcto</div>
+          <div class="code-block">
+<span class="cmt">// DAO con type safety</span>
+<span class="kw">@Dao interface</span> <span class="fn">PatientDao</span> {
+    <span class="kw">@Query</span>(<span class="str">"SELECT * FROM patients"</span>)
+    <span class="kw">fun</span> <span class="fn">getAll</span>(): Flow&lt;List&lt;Patient&gt;&gt;
+}
+
+<span class="cmt">// ViewModel con coroutine</span>
+viewModelScope.<span class="fn">launch</span> {
+    dao.<span class="fn">getAll</span>().<span class="fn">collect</span> { list ->
+        _patients.value = list
+    }
+}
+          </div>
+        </div>
+      </div>
+      <hr>
+      <div class="table-wrap" style="margin-top:12px">
+        <table>
+          <tr><th>Room</th><th>SQLite directo</th></tr>
+          <tr><td>Queries verificadas en <strong>compilación</strong></td><td>Errores en <strong>runtime</strong></td></tr>
+          <tr><td>Integra con Flow/LiveData</td><td>Manual</td></tr>
+          <tr><td>Tipo seguro</td><td>Cursor manual</td></tr>
+          <tr><td>Fuerza uso en background</td><td>Puede correr en main thread</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="section-heading">SQL en React Native / Expo</div>
+    <div class="card">
+      <div class="code-block">
+<span class="cmt">// expo-sqlite — siempre en async</span>
+<span class="kw">import</span> * <span class="kw">as</span> SQLite <span class="kw">from</span> <span class="str">'expo-sqlite'</span>;
+
+<span class="kw">const</span> db = SQLite.<span class="fn">openDatabase</span>(<span class="str">'app.db'</span>);
+
+<span class="cmt">// ✅ Correcto — operación async</span>
+db.<span class="fn">transaction</span>(tx => {
+    tx.<span class="fn">executeSql</span>(
+        <span class="str">'SELECT * FROM patients WHERE id = ?'</span>,
+        [patientId],
+        (_, result) => setPatient(result.rows._array[0])
+    );
+});
+      </div>
+      <div class="anti-row" style="margin-top:12px">
+        <div class="anti-title">🔴 Antipatrón frecuente en React Native</div>
+        <div class="anti-desc">Llamar a la DB directamente en el render o en el cuerpo del componente sin <code>useEffect</code>. La DB debe consultarse solo en efectos o handlers, nunca en el render síncrono.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SENSORES                                       -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div id="sensores" class="section">
+
+    <div class="section-heading">Sensores en Android</div>
+    <div class="card">
+      <div class="compare">
+        <div>
+          <div class="code-label bad-label">❌ MAL — sin desregistrar</div>
+          <div class="code-block">
+<span class="kw">class</span> <span class="fn">MainActivity</span> : AppCompatActivity(),
+    SensorEventListener {
+
+    <span class="kw">override fun</span> <span class="fn">onCreate</span>(...) {
+        <span class="kw">val</span> sm = getSystemService(SensorManager)
+        <span class="kw">val</span> sensor = sm.<span class="fn">getDefaultSensor</span>(
+            Sensor.TYPE_ACCELEROMETER
+        )
+        <span class="cmt">// Registra pero NUNCA desregistra</span>
+        sm.<span class="bad">registerListener</span>(this, sensor,
+            SensorManager.SENSOR_DELAY_NORMAL)
+    }
+    <span class="cmt">// ❌ No hay onPause() ni onDestroy()</span>
+}
+          </div>
+        </div>
+        <div>
+          <div class="code-label good-label">✅ BIEN — con lifecycle correcto</div>
+          <div class="code-block">
+<span class="kw">class</span> <span class="fn">MainActivity</span> : AppCompatActivity(),
+    SensorEventListener {
+
+    <span class="kw">private lateinit var</span> sensorManager: SensorManager
+    <span class="kw">private var</span> sensor: Sensor? = null
+
+    <span class="kw">override fun</span> <span class="fn">onCreate</span>(...) {
+        sensorManager = getSystemService(...)
+        sensor = sensorManager.<span class="fn">getDefaultSensor</span>(
+            Sensor.TYPE_ACCELEROMETER)
+    }
+
+    <span class="kw">override fun</span> <span class="fn">onResume</span>() {
+        <span class="kw">super</span>.<span class="fn">onResume</span>()
+        sensorManager.<span class="good">registerListener</span>(
+            this, sensor, SENSOR_DELAY_NORMAL)
+    }
+
+    <span class="kw">override fun</span> <span class="fn">onPause</span>() {
+        <span class="kw">super</span>.<span class="fn">onPause</span>()
+        sensorManager.<span class="good">unregisterListener</span>(this)
+    }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-heading">Sensores comunes</div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <tr><th>Sensor</th><th>Constante</th><th>Dato que da</th></tr>
+          <tr>
+            <td>Acelerómetro</td>
+            <td><code>TYPE_ACCELEROMETER</code></td>
+            <td>Aceleración en X, Y, Z (m/s²). Detecta movimiento y orientación.</td>
+          </tr>
+          <tr>
+            <td>Giroscopio</td>
+            <td><code>TYPE_GYROSCOPE</code></td>
+            <td>Velocidad de rotación en X, Y, Z (rad/s).</td>
+          </tr>
+          <tr>
+            <td>GPS / Ubicación</td>
+            <td><code>LocationManager</code></td>
+            <td>Latitud, longitud, altitud. Requiere permiso en Manifest.</td>
+          </tr>
+          <tr>
+            <td>Luz ambiental</td>
+            <td><code>TYPE_LIGHT</code></td>
+            <td>Nivel de iluminación en lux.</td>
+          </tr>
+          <tr>
+            <td>Proximidad</td>
+            <td><code>TYPE_PROXIMITY</code></td>
+            <td>Distancia al objeto (near/far). Usado para apagar pantalla al llamar.</td>
+          </tr>
+          <tr>
+            <td>Batería</td>
+            <td><code>BatteryManager</code></td>
+            <td>Nivel, estado de carga, temperatura. Vía BroadcastReceiver.</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="section-heading">Permisos de sensores en AndroidManifest</div>
+    <div class="card">
+      <div class="code-block">
+<span class="cmt">&lt;!-- AndroidManifest.xml --&gt;</span>
+
+<span class="cmt">&lt;!-- GPS - pedir también en runtime (Android 6+) --&gt;</span>
+&lt;uses-permission android:name=<span class="str">"android.permission.ACCESS_FINE_LOCATION"</span>/&gt;
+
+<span class="cmt">&lt;!-- Cámara --&gt;</span>
+&lt;uses-permission android:name=<span class="str">"android.permission.CAMERA"</span>/&gt;
+
+<span class="cmt">&lt;!-- Acelerómetro, giroscopio, luz → NO necesitan permiso en Manifest --&gt;</span>
+<span class="cmt">&lt;!-- Solo registrar/desregistrar con SensorManager --&gt;</span>
+      </div>
+      <div class="anti-row" style="margin-top:12px">
+        <div class="anti-title">🔴 Permiso declarado pero no pedido en runtime</div>
+        <div class="anti-desc">Desde Android 6 (API 23), los permisos "peligrosos" (ubicación, cámara, contactos) deben pedirse en tiempo de ejecución con <code>ActivityCompat.requestPermissions()</code>. Declararlos solo en el Manifest no alcanza. El app crashea o funciona mal silenciosamente.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- TEORÍA Q&A                                     -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div id="teoria" class="section">
+
+    <div class="alert info">
+      <span>📋</span>
+      <div>Preguntas estilo examen oral. <strong>Hacé click para ver la respuesta.</strong> La consigna dice: mientras más conciso, mejor.</div>
+    </div>
+
+    <div class="section-heading">Ciclo de vida</div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">¿Qué pasa con el ciclo de vida al rotar la pantalla? <span class="arrow">▼</span></div>
+      <div class="qa-a">La Activity se destruye y se vuelve a crear: <code>onPause → onStop → onDestroy → onCreate → onStart → onResume</code>. Por eso cualquier estado guardado en variables de la Activity se pierde. La solución es usar <strong>ViewModel</strong> (sobrevive a la rotación) o <code>onSaveInstanceState()</code>.</div>
+    </div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">¿Por qué no se debe hacer una llamada de red en onCreate? <span class="arrow">▼</span></div>
+      <div class="qa-a"><code>onCreate</code> corre en el <strong>main thread (UI thread)</strong>. Las operaciones de red son bloqueantes. Si bloquean el main thread más de 5 segundos, Android lanza un <strong>ANR</strong> (App Not Responding). Desde Android 3.0, las llamadas de red en main thread lanzaron <code>NetworkOnMainThreadException</code> directamente. La solución: <code>viewModelScope.launch(Dispatchers.IO)</code>.</div>
+    </div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">¿Diferencia entre onStop y onDestroy? <span class="arrow">▼</span></div>
+      <div class="qa-a"><strong>onStop</strong>: la Activity no es visible pero puede volver (el sistema la puede matar si necesita memoria). <strong>onDestroy</strong>: la Activity termina definitivamente (usuario presionó Back, llamó <code>finish()</code>, o el sistema la destruyó). Los recursos pesados se liberan en <code>onDestroy</code>; los sensores se liberan en <code>onPause</code>.</div>
+    </div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">¿Qué es un memory leak en el contexto de Android? <span class="arrow">▼</span></div>
+      <div class="qa-a">Cuando un objeto mantiene una referencia a una Activity/Fragment que ya debería estar destruida, impidiendo que el Garbage Collector la limpie. Causas comunes: sensores no desregistrados, listeners no eliminados, suscripciones no canceladas, o corutinas sin scope apropiado. Resultado: la app consume cada vez más RAM hasta crash.</div>
+    </div>
+
+    <div class="section-heading">Arquitectura</div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">¿Por qué usar MVVM en lugar de poner todo en la Activity? <span class="arrow">▼</span></div>
+      <div class="qa-a">
+        <ul>
+          <li><strong>Testeable</strong>: el ViewModel no depende de Android, se puede testear con JUnit.</li>
+          <li><strong>Sobrevive rotaciones</strong>: el ViewModel vive más que la Activity.</li>
+          <li><strong>Separación de responsabilidades</strong>: la Activity solo actualiza la UI, el ViewModel maneja la lógica.</li>
+          <li><strong>Mantenible</strong>: un cambio en la UI no rompe la lógica y viceversa.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">¿Qué es el Repository pattern y por qué usarlo? <span class="arrow">▼</span></div>
+      <div class="qa-a">El Repository es una capa que <strong>abstrae el origen de los datos</strong>. El ViewModel no sabe ni le importa si los datos vienen de la red, de caché o de la BD local. Ventajas: podés cambiar de Retrofit a Ktor sin tocar el ViewModel. Podés implementar una lógica de "si no hay red, usá el caché" en un solo lugar.</div>
+    </div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">¿Qué cambiarías de este código y por qué? (God Activity) <span class="arrow">▼</span></div>
+      <div class="qa-a">
+        Respuesta esperada en el examen:
+        <ul>
+          <li><strong>Extraer lógica de negocio</strong> a un ViewModel.</li>
+          <li><strong>Extraer acceso a datos</strong> a un Repository.</li>
+          <li><strong>Mover queries</strong> a un DAO de Room con funciones <code>suspend</code>.</li>
+          <li><strong>La Activity</strong> solo debería observar el ViewModel y actualizar la UI.</li>
+        </ul>
+        Enfocate en <em>qué</em> movés y <em>por qué</em>, no en el código exacto.
+      </div>
+    </div>
+
+    <div class="section-heading">React</div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">¿Qué es useEffect y cuándo usar el array de dependencias? <span class="arrow">▼</span></div>
+      <div class="qa-a">
+        <code>useEffect</code> corre <em>después</em> de que React actualiza el DOM (side effects). El array de dependencias controla cuándo se re-ejecuta:
+        <ul>
+          <li><strong>Sin array</strong>: corre después de cada render.</li>
+          <li><strong>Array vacío <code>[]</code></strong>: corre solo al montar el componente.</li>
+          <li><strong>Con valores <code>[id]</code></strong>: corre cuando esos valores cambian.</li>
+        </ul>
+        Siempre retornar cleanup si abrís suscripciones o timers.
+      </div>
+    </div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">¿Por qué usar key en listas y qué pasa si se usa el índice? <span class="arrow">▼</span></div>
+      <div class="qa-a">React usa <code>key</code> para identificar qué elemento cambió en una lista y hacer el mínimo de cambios en el DOM. Si usás el índice (<code>key={i}</code>), al agregar/eliminar un elemento del principio, todos los índices cambian y React re-renderiza toda la lista innecesariamente — y puede mezclar el estado de los componentes. Usá siempre un <strong>id estable y único</strong>.</div>
+    </div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">¿Qué es un custom hook y cuándo extraer uno? <span class="arrow">▼</span></div>
+      <div class="qa-a">Un custom hook es una función que empieza con <code>use</code> y puede llamar a otros hooks. Se extrae cuando: <strong>(1)</strong> querés reusar lógica con estado entre componentes, <strong>(2)</strong> un componente tiene demasiada lógica mezclada con el render, o <strong>(3)</strong> querés testear la lógica por separado de la UI. No genera un nuevo componente en el árbol — solo extrae la lógica.</div>
+    </div>
+
+    <div class="section-heading">SQL / Datos</div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">¿Por qué Room es mejor que SQLite directo en Android? <span class="arrow">▼</span></div>
+      <div class="qa-a">
+        <ul>
+          <li><strong>Compile-time verification</strong>: los errores en las queries se detectan al compilar, no en runtime.</li>
+          <li><strong>Type safety</strong>: no hay Cursors manuales ni casteos.</li>
+          <li><strong>Integración reactiva</strong>: las queries pueden retornar <code>Flow</code> o <code>LiveData</code>.</li>
+          <li><strong>Fuerza background</strong>: los métodos del DAO deben ser <code>suspend</code>, imposible correrlos en main thread accidentalmente.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">¿Qué es ANR y cómo se previene? <span class="arrow">▼</span></div>
+      <div class="qa-a"><strong>ANR (App Not Responding)</strong>: el sistema muestra este error si el main thread no responde por más de 5 segundos. Causas: operación de red, query de BD, o cualquier cómputo pesado en el hilo principal. Se previene ejecutando todo lo que bloquea en <code>Dispatchers.IO</code> con coroutines, y devolviendo los resultados al main thread solo para actualizar la UI.</div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- EXAMEN REAL                                    -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div id="examen" class="section">
+
+    <div class="alert warn">
+      <span>📝</span>
+      <div><strong>Examen real — Noviembre 2026.</strong> Estas son las preguntas del examen del segundo parcial con las respuestas correctas desarrolladas.</div>
+    </div>
+
+    <!-- ─── Pregunta 1 ─── -->
+    <div class="section-heading">1. Dos instalaciones con la lista vacía</div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#E3F2FD">📱</div>
+        <div>
+          <div class="card-title">Contexto</div>
+          <div class="card-subtitle">Teléfono A: instalado hoy, nunca recibió respuesta del servidor. Teléfono B: recibió ayer una respuesta exitosa con 0 charlas. Hoy, al abrir sin señal, Room devuelve lista vacía en ambos.</div>
+        </div>
+      </div>
+
+      <div class="section-heading" style="margin-top:0">a) Mensaje que debería ver cada persona</div>
+      <div class="anti-row ok">
+        <div class="anti-title">📱 Teléfono A — Nunca recibió datos</div>
+        <div class="anti-desc"><strong>Mensaje:</strong> "No hay conexión a internet. Conectate para ver el contenido." <br>No tiene datos locales: no puede distinguir "sin charlas" de "nunca cargó". Se muestra error de conectividad.</div>
+      </div>
+      <div class="anti-row ok">
+        <div class="anti-title">📱 Teléfono B — Tiene caché de ayer (0 charlas)</div>
+        <div class="anti-desc">
+          <strong>Lo que se sabe del programa de ayer:</strong> hubo 0 charlas. Room devuelve lista vacía correctamente.<br>
+          <strong>Lo que se sabe del programa de hoy:</strong> desconocido (no hay conexión).<br>
+          <strong>Mensaje:</strong> "Mostrando contenido del [fecha de ayer]. Conectate para actualizar."<br>
+          Hay que distinguir la fecha de la última sincronización para ser honesto con el usuario.
+        </div>
+      </div>
+
+      <div class="section-heading">b) Dato persistente extra además de las charlas</div>
+      <div class="alert info" style="margin-top:8px">
+        <span>💡</span>
+        <div>
+          <strong>Dato: timestamp de la última sincronización exitosa.</strong><br>
+          <strong>Cuándo actualizarlo:</strong> cada vez que el servidor devuelve una respuesta exitosa (200 OK con datos válidos).<br>
+          <strong>Qué valor conserva después del fallo:</strong> la fecha/hora de la última vez que los datos fueron frescos — así podés mostrar "datos de hace 2 días" en lugar de una pantalla vacía sin contexto.
+        </div>
+      </div>
+      <div class="code-block">
+<span class="cmt">// Room entity adicional o campo en SharedPreferences</span>
+<span class="kw">val</span> lastSyncAt: Long = System.<span class="fn">currentTimeMillis</span>()
+
+<span class="cmt">// Al mostrar la lista:</span>
+<span class="kw">if</span> (charlas.isEmpty() &amp;&amp; lastSyncAt == <span class="str">0L</span>) {
+    <span class="fn">showError</span>(<span class="str">"Sin conexión. Conectate para cargar el contenido."</span>)
+} <span class="kw">else if</span> (!isOnline) {
+    <span class="fn">showStaleWarning</span>(<span class="str">"Datos del $lastSyncAt. Sin conexión."</span>)
+}
+      </div>
+    </div>
+
+    <!-- ─── Pregunta 2 ─── -->
+    <div class="section-heading">2. Una favorita cambia durante la descarga</div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#FFF3E0">⭐</div>
+        <div>
+          <div class="card-title">Contexto</div>
+          <div class="card-subtitle">Antes de actualizar: charla 11 en Mi agenda, 24 en catálogo sin marcar. Se inicia descarga. Mientras espera, la usuaria agrega la 24 a Mi agenda. La respuesta trae: retira la 11, mantiene la 24, agrega la 90.</div>
+        </div>
+      </div>
+
+      <div class="section-heading" style="margin-top:0">a) Tabla — estado al terminar</div>
+      <div class="table-wrap">
+        <table>
+          <tr>
+            <th>Charla</th>
+            <th>¿En catálogo?</th>
+            <th>¿En Mi agenda?</th>
+          </tr>
+          <tr>
+            <td><strong>11</strong></td>
+            <td>No <span style="color:var(--red)">— la API la retiró</span></td>
+            <td>No <span style="color:var(--red)">— se elimina junto con el catálogo</span></td>
+          </tr>
+          <tr>
+            <td><strong>24</strong></td>
+            <td>Sí <span style="color:var(--green)">— la API la mantuvo</span></td>
+            <td>Sí <span style="color:var(--green)">— la usuaria la marcó durante la descarga</span></td>
+          </tr>
+          <tr>
+            <td><strong>90</strong></td>
+            <td>Sí <span style="color:var(--green)">— la API la agregó</span></td>
+            <td>No <span style="color:var(--text-2)">— nunca fue marcada</span></td>
+          </tr>
+        </table>
+      </div>
+      <div class="alert info" style="margin-top:12px">
+        <span>🔑</span>
+        <div><strong>Regla clave:</strong> el catálogo se reemplaza con lo que dice el servidor. Mi agenda es estado <em>local del usuario</em> — se conserva para las charlas que siguen en el catálogo, y se pierde para las que el servidor quitó (11 ya no existe).</div>
+      </div>
+
+      <div class="section-heading">b) Acción de la usuaria que se pierde y cómo evitarlo</div>
+      <div class="anti-row">
+        <div class="anti-title">🔴 Acción perdida: la usuaria agregó la 24 a Mi agenda durante la descarga</div>
+        <div class="anti-desc">Si el Repository guardó una copia de favoritas ANTES de iniciar la descarga y la usa para restaurar al recibir la respuesta, sobreescribiría el estado nuevo con el viejo → la 24 vuelve a "no marcada".</div>
+      </div>
+      <div class="anti-row ok">
+        <div class="anti-title">✅ Cómo evitarlo: no guardar snapshot de favoritas al inicio</div>
+        <div class="anti-desc">
+          <strong>Implementación correcta:</strong> el Repository hace un JOIN entre el catálogo nuevo del servidor y el estado actual de favoritas en Room <em>en el momento de escribir</em>, no de leer. Así la marca que hizo la usuaria durante la descarga ya está en Room y se conserva.<br><br>
+          Alternativa: usar una tabla separada para "charlas favoritas" (solo IDs) que el servidor nunca toca. Al actualizar el catálogo se hace un LEFT JOIN, no un replace total.
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Pregunta 3 ─── -->
+    <div class="section-heading">3. Volver a una ficha y a una lista filtrada</div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#E8F5E9">🔙</div>
+        <div>
+          <div class="card-title">Contexto</div>
+          <div class="card-subtitle">Elegís Día 2 y tema Datos, abrís el detalle de una charla y rotás el teléfono. Después enviás la app al fondo. Android termina el proceso para liberar memoria. Volvés desde Recientes a la misma tarea.</div>
+        </div>
+      </div>
+
+      <div class="section-heading" style="margin-top:0">a) Pantalla esperada al volver + filtros al tocar Volver</div>
+      <div class="anti-row ok">
+        <div class="anti-title">✅ Pantalla esperada: el detalle de la misma charla</div>
+        <div class="anti-desc">Android recrea la tarea desde el back stack. La Activity de detalle se muestra primero. Al tocar Volver, el sistema navega al back stack guardado → volvés a la lista de Día 2 / tema Datos, con esos filtros aplicados.</div>
+      </div>
+      <div class="alert info" style="margin-top:8px">
+        <span>💡</span>
+        <div>Esto funciona solo si los filtros (día, tema) y el ID de la charla están guardados en el <strong>back stack</strong> (como argumentos de navegación o en <code>SavedStateHandle</code>). Si se guardan solo en variables en memoria, se pierden al morir el proceso.</div>
+      </div>
+
+      <div class="section-heading">b) Dónde guardar: identificador de charla, día y tema</div>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Dato</th><th>Dónde guardar</th><th>Por qué</th></tr>
+          <tr>
+            <td>ID de la charla</td>
+            <td><code>SavedStateHandle</code> en el ViewModel, o como argumento de navegación</td>
+            <td>Sobrevive muerte del proceso y rotación</td>
+          </tr>
+          <tr>
+            <td>Día y tema (filtros)</td>
+            <td><code>SavedStateHandle</code> en el ViewModel de la lista</td>
+            <td>Al volver desde el detalle, la lista los recupera automáticamente</td>
+          </tr>
+        </table>
+      </div>
+      <div class="anti-row">
+        <div class="anti-title">🔴 Si alguno se pierde — cómo identificarlo y corregirlo</div>
+        <div class="anti-desc">
+          <strong>Síntoma:</strong> al volver desde Recientes, la lista aparece sin filtros o muestra el primer ítem en lugar del detalle correcto.<br>
+          <strong>Causa probable:</strong> el filtro o ID se guarda en una variable del ViewModel con <code>MutableStateFlow</code> normal (no <code>SavedStateHandle</code>). Al morir el proceso se pierde.<br>
+          <strong>Corrección:</strong> reemplazar <code>private val _filtro = MutableStateFlow("")</code> por <code>private val _filtro = savedStateHandle.getStateFlow("filtro", "")</code>.
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Pregunta 5 ─── -->
+    <div class="section-heading">5. Ciclo de vida de Android</div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#F3E5F5">🔄</div>
+        <div>
+          <div class="card-title">Contexto</div>
+          <div class="card-subtitle">Una Activity colecciona un Flow de Room con repeatOnLifecycle(STARTED). Un ViewModel descarga el programa en viewModelScope. La persona presiona Inicio → Activity pasa a STOPPED. El proceso sigue vivo.</div>
+        </div>
+      </div>
+
+      <div class="section-heading" style="margin-top:0">a) ¿Qué ocurre con la colección y la descarga al pasar a STOPPED? ¿Y al volver a STARTED?</div>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Componente</th><th>Al pasar a STOPPED</th><th>Al volver a STARTED</th></tr>
+          <tr>
+            <td><strong>Colección del Flow</strong><br><code>repeatOnLifecycle(STARTED)</code></td>
+            <td>Se <strong>cancela</strong> automáticamente. La Activity deja de recibir actualizaciones de Room.</td>
+            <td>Se <strong>relanza</strong> automáticamente. Vuelve a coleccionar el Flow desde el último valor.</td>
+          </tr>
+          <tr>
+            <td><strong>Descarga en viewModelScope</strong></td>
+            <td>Sigue corriendo. <code>viewModelScope</code> vive mientras el ViewModel exista, independiente del ciclo de la Activity.</td>
+            <td>Ya estaba corriendo (o terminó). El resultado ya estará en el StateFlow cuando la colección se relance.</td>
+          </tr>
+        </table>
+      </div>
+      <div class="alert ok" style="margin-top:8px">
+        <span>✅</span>
+        <div><strong>Punto clave:</strong> <code>repeatOnLifecycle(STARTED)</code> desconecta y reconecta la colección sin cancelar la coroutine del ViewModel. Es la combinación correcta: no derrocha recursos cuando la app está en fondo, pero tampoco cancela la descarga.</div>
+      </div>
+    </div>
+
+    <!-- ─── Pregunta 6 ─── -->
+    <div class="section-heading">6. Responsabilidades del patrón Repository</div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#E0F2F1">🏛</div>
+        <div>
+          <div class="card-title">Contexto</div>
+          <div class="card-subtitle">El catálogo observa charlas de Room. Al actualizar, Retrofit devuelve 12 charlas nuevas pero falla la escritura local antes de confirmar. La base todavía contiene la edición anterior.</div>
+        </div>
+      </div>
+
+      <div class="section-heading" style="margin-top:0">a) ¿Qué lista debe observar el ViewModel y qué resultado debe comunicar el Repository?</div>
+      <div class="anti-row ok">
+        <div class="anti-title">✅ El ViewModel observa siempre Room (la fuente de verdad local)</div>
+        <div class="anti-desc">El ViewModel no debería observar directamente la respuesta de Retrofit. El flujo correcto: Retrofit → Repository escribe en Room → Room notifica el Flow → ViewModel recibe los datos.</div>
+      </div>
+      <div class="anti-row">
+        <div class="anti-title">🔴 Fallo en la escritura: ¿qué comunica el Repository?</div>
+        <div class="anti-desc">Si la escritura en Room falla, el Repository debe: <strong>(1)</strong> capturar la excepción, <strong>(2)</strong> emitir un estado de error (sealed class: <code>Result.Error(exception)</code>), y <strong>(3)</strong> NO emitir los datos de Retrofit directamente al ViewModel. La lista que ve el usuario debe ser la de Room (edición anterior), con un banner de error que diga que la actualización falló.</div>
+      </div>
+      <div class="code-block">
+<span class="cmt">// Repository — patrón correcto</span>
+<span class="kw">suspend fun</span> <span class="fn">syncPrograma</span>(): <span class="fn">Result</span>&lt;Unit&gt; {
+    <span class="kw">return try</span> {
+        <span class="kw">val</span> remoto = api.<span class="fn">getPrograma</span>()
+        db.charlaDao().<span class="fn">replaceAll</span>(remoto)  <span class="cmt">// puede lanzar excepción</span>
+        Result.<span class="fn">success</span>(Unit)
+    } <span class="kw">catch</span> (e: Exception) {
+        Result.<span class="fn">failure</span>(e)  <span class="cmt">// ViewModel muestra error, Room no cambió</span>
+    }
+}
+
+<span class="cmt">// ViewModel observa Room, no Retrofit</span>
+<span class="kw">val</span> charlas = db.charlaDao().<span class="fn">getAll</span>()  <span class="cmt">// Flow&lt;List&lt;Charla&gt;&gt;</span>
+      </div>
+    </div>
+
+    <!-- ─── Pregunta 7 ─── -->
+    <div class="section-heading">7. Corrutinas y cancelación</div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#E0F2F1">⚡</div>
+        <div>
+          <div class="card-title">Contexto</div>
+          <div class="card-subtitle">Una función suspendida llama a Retrofit dentro de try y usa catch (e: Exception) para devolver el mismo resultado de error ante cualquier excepción. El ViewModel cancela el Job mientras la función espera la respuesta.</div>
+        </div>
+      </div>
+
+      <div class="section-heading" style="margin-top:0">a) ¿Qué excepción interceptaría ese catch al cancelarse el Job? ¿Qué información se pierde?</div>
+      <div class="anti-row">
+        <div class="anti-title">🔴 El catch intercepta CancellationException — y eso es un bug</div>
+        <div class="anti-desc">
+          Al cancelar el Job, Kotlin lanza <code>CancellationException</code> para interrumpir la coroutine de forma cooperativa. Si el <code>catch (e: Exception)</code> la atrapa y retorna un "resultado de error" genérico, el sistema de coroutines no puede propagarla correctamente → la cancelación no se propaga → la coroutine <strong>no se cancela</strong> aunque el ViewModel ya la descartó.
+        </div>
+      </div>
+      <div class="anti-row ok">
+        <div class="anti-title">✅ Información que se pierde y por qué importa</div>
+        <div class="anti-desc">Al convertir <code>CancellationException</code> en un "error de conexión genérico": <strong>(1)</strong> se pierde la causa real (cancelación intencional vs error de red), <strong>(2)</strong> la UI puede mostrar un error al usuario cuando no hubo ningún problema de red, y <strong>(3)</strong> el scope no sabe que la coroutine terminó correctamente por cancelación.</div>
+      </div>
+      <div class="code-block">
+<span class="cmt">// ❌ MALO — atrapa CancellationException</span>
+<span class="kw">try</span> {
+    <span class="kw">val</span> result = api.<span class="fn">getData</span>()
+} <span class="kw">catch</span> (e: Exception) {
+    <span class="bad">_state.value = State.Error("Error de conexión")</span>  <span class="cmt">// bug silencioso</span>
+}
+
+<span class="cmt">// ✅ BIEN — no interceptar cancelación</span>
+<span class="kw">try</span> {
+    <span class="kw">val</span> result = api.<span class="fn">getData</span>()
+} <span class="kw">catch</span> (e: CancellationException) {
+    <span class="good">throw e</span>  <span class="cmt">// re-lanzar siempre</span>
+} <span class="kw">catch</span> (e: Exception) {
+    _state.value = <span class="fn">State.Error</span>(e.message)
+}
+      </div>
+      <div class="alert warn" style="margin-top:8px">
+        <span>⚠️</span>
+        <div><strong>Regla:</strong> <code>CancellationException</code> <em>nunca</em> debe ser silenciada en una coroutine. Si atrapás <code>Exception</code>, siempre re-lanzá <code>CancellationException</code>. Alternativamente, atrapá solo <code>IOException</code> o <code>HttpException</code> para ser más específico.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- PRACTICAR                                      -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div id="practicar" class="section">
+
+    <div class="alert ok">
+      <span>🎯</span>
+      <div>Practicá estos ejercicios <strong>antes</strong> del examen. En el examen te van a dar algo parecido y ya vas a saber por dónde empezar.</div>
+    </div>
+
+    <div class="section-heading">Ejercicios de identificación (para la hoja de teoría)</div>
+
+    <div class="task-card">
+      <div class="task-top">
+        <div>
+          <div class="task-title">Identificar antipatrones en código dado</div>
+          <div class="task-meta">Tomá cualquier Activity o componente y listá todos los problemas. Practique decir: nombre del antipatrón → por qué es malo → cómo se arregla.</div>
+        </div>
+        <span class="chip orange">Teoría</span>
+      </div>
+      <div class="task-chips">
+        <span class="chip red">God Activity</span>
+        <span class="chip red">Main Thread</span>
+        <span class="chip red">Memory Leak</span>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-top">
+        <div>
+          <div class="task-title">Explicar el flujo de una operación de red en MVVM</div>
+          <div class="task-meta">Sin código: explicar en palabras qué hace cada capa cuando el usuario toca "Recargar". UI → ViewModel → Repository → API → Repository → ViewModel → UI.</div>
+        </div>
+        <span class="chip blue">Arquitectura</span>
+      </div>
+      <div class="task-chips">
+        <span class="chip blue">MVVM</span>
+        <span class="chip blue">Repository</span>
+        <span class="chip teal">Coroutines</span>
+      </div>
+    </div>
+
+    <div class="section-heading">Ejercicios de código (para la parte práctica)</div>
+
+    <div class="task-card">
+      <div class="task-top">
+        <div>
+          <div class="task-title">Mover una query de Room de la Activity al ViewModel</div>
+          <div class="task-meta">Tomá una Activity que llama a <code>db.userDao().getAll()</code> directamente. Extraé esa lógica al ViewModel usando <code>viewModelScope.launch</code> y observá el resultado con <code>StateFlow</code>.</div>
+        </div>
+        <span class="chip orange">Kotlin</span>
+      </div>
+      <div class="task-chips">
+        <span class="chip orange">Room</span>
+        <span class="chip teal">ViewModel</span>
+        <span class="chip teal">Coroutines</span>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-top">
+        <div>
+          <div class="task-title">Agregar cleanup a un sensor en Android</div>
+          <div class="task-meta">Tomá código que registra un acelerómetro en <code>onCreate</code>. Mové el registro a <code>onResume</code> y agregá el <code>unregisterListener</code> en <code>onPause</code>. Verificá que no haya memory leak.</div>
+        </div>
+        <span class="chip orange">Kotlin</span>
+      </div>
+      <div class="task-chips">
+        <span class="chip orange">Sensores</span>
+        <span class="chip orange">Lifecycle</span>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-top">
+        <div>
+          <div class="task-title">Extraer fetch a un custom hook en React</div>
+          <div class="task-meta">Tomá un componente con <code>useEffect + fetch</code> adentro. Extraé toda la lógica a un hook <code>useData(url)</code> que retorne <code>{ data, loading, error }</code>. El componente solo llama al hook.</div>
+        </div>
+        <span class="chip blue">React</span>
+      </div>
+      <div class="task-chips">
+        <span class="chip blue">Custom Hook</span>
+        <span class="chip blue">useEffect</span>
+        <span class="chip green">Cleanup</span>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-top">
+        <div>
+          <div class="task-title">Agregar un nuevo campo a una tabla Room</div>
+          <div class="task-meta">Agregá una columna <code>priority: Int</code> a una Entity existente. Incrementá la versión de la DB. Escribí la migración con <code>addColumn</code> para no perder datos. Actualizá las queries del DAO que necesiten el campo nuevo.</div>
+        </div>
+        <span class="chip orange">Kotlin</span>
+      </div>
+      <div class="task-chips">
+        <span class="chip orange">Room</span>
+        <span class="chip red">Migrations</span>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-top">
+        <div>
+          <div class="task-title">Implementar un filtro sobre una lista existente</div>
+          <div class="task-meta">Dada una lista de ítems, agregá un campo de búsqueda que filtre en tiempo real. En React: <code>useState</code> + <code>filter()</code>. En Kotlin: <code>StateFlow</code> + <code>combine</code> de dos flows.</div>
+        </div>
+        <span class="chip purple">Ambas plataformas</span>
+      </div>
+      <div class="task-chips">
+        <span class="chip blue">React</span>
+        <span class="chip orange">Kotlin</span>
+        <span class="chip green">Estado</span>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-top">
+        <div>
+          <div class="task-title">Agregar manejo de error a una llamada de red</div>
+          <div class="task-meta">Tomá código que solo tiene el happy path. Agregá un estado <code>error: String?</code>, capturá la excepción en el <code>catch</code>, mostrá el mensaje de error en la UI, y un botón de "Reintentar".</div>
+        </div>
+        <span class="chip purple">Ambas plataformas</span>
+      </div>
+      <div class="task-chips">
+        <span class="chip red">Error handling</span>
+        <span class="chip teal">UX</span>
+      </div>
+    </div>
+
+    <div class="section-heading">Preguntas de examen simuladas</div>
+    <div class="card">
+      <p style="margin-bottom:12px; font-weight:600">Respondé en papel, en máximo 3 líneas cada una:</p>
+      <ol style="padding-left:20px; font-size:13px; line-height:2.2; color:var(--text-2)">
+        <li>¿Por qué este código puede causar un crash en Android? (te dan un fetch en <code>onCreate</code>)</li>
+        <li>¿Qué problema tiene este <code>useEffect</code> y cómo lo arreglás? (sin cleanup)</li>
+        <li>¿Qué patrón de arquitectura usarías para separar este código y qué quedaría en cada capa?</li>
+        <li>¿Por qué es mala práctica usar el índice como <code>key</code> en una lista de React?</li>
+        <li>¿Qué pasa si no llamás a <code>unregisterListener</code> en un sensor?</li>
+        <li>¿Qué ventaja tiene Room sobre SQLite directo?</li>
+        <li>Un compañero dice que la app "funciona bien". ¿Puede tener bugs graves igual? (sí: ANR, memory leak, crash en rotación)</li>
+      </ol>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  function showSection(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(el) {
+    const answer = el.nextElementSibling;
+    el.classList.toggle('open');
+    answer.classList.toggle('show');
+  }
+
+  function markDone(cb) {
+    const li = cb.closest('li');
+    li.classList.toggle('done', cb.checked);
+  }
+</script>
+</body>
+</html>
