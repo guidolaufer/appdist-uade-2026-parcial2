@@ -1286,7 +1286,7 @@ db.<span class="fn">transaction</span>(tx => {
 
     <div class="alert warn">
       <span>📝</span>
-      <div><strong>Examen real — Noviembre 2026.</strong> Estas son las preguntas del examen del segundo parcial con las respuestas correctas desarrolladas.</div>
+      <div><strong>Examen real — Noviembre 2026.</strong> Preguntas del segundo parcial con respuestas desarrolladas, teoría completa y diagramas para entender cada concepto desde la raíz.</div>
     </div>
 
     <!-- ─── Pregunta 1 ─── -->
@@ -1295,46 +1295,74 @@ db.<span class="fn">transaction</span>(tx => {
       <div class="card-header">
         <div class="card-icon" style="background:#E3F2FD">📱</div>
         <div>
-          <div class="card-title">Contexto</div>
-          <div class="card-subtitle">Teléfono A: instalado hoy, nunca recibió respuesta del servidor. Teléfono B: recibió ayer una respuesta exitosa con 0 charlas. Hoy, al abrir sin señal, Room devuelve lista vacía en ambos.</div>
+          <div class="card-title">Contexto del problema</div>
+          <div class="card-subtitle">Teléfono A: instalado hoy, nunca recibió respuesta del servidor. Teléfono B: recibió ayer una respuesta exitosa con 0 charlas. Hoy, al abrir sin señal, Room devuelve lista vacía en ambos. ¿Qué mensaje debe ver cada usuario?</div>
         </div>
       </div>
 
-      <div class="section-heading" style="margin-top:0">a) Mensaje que debería ver cada persona</div>
-      <div class="anti-row ok">
-        <div class="anti-title">📱 Teléfono A — Nunca recibió datos</div>
-        <div class="anti-desc"><strong>Mensaje:</strong> "No hay conexión a internet. Conectate para ver el contenido." <br>No tiene datos locales: no puede distinguir "sin charlas" de "nunca cargó". Se muestra error de conectividad.</div>
-      </div>
-      <div class="anti-row ok">
-        <div class="anti-title">📱 Teléfono B — Tiene caché de ayer (0 charlas)</div>
-        <div class="anti-desc">
-          <strong>Lo que se sabe del programa de ayer:</strong> hubo 0 charlas. Room devuelve lista vacía correctamente.<br>
-          <strong>Lo que se sabe del programa de hoy:</strong> desconocido (no hay conexión).<br>
-          <strong>Mensaje:</strong> "Mostrando contenido del [fecha de ayer]. Conectate para actualizar."<br>
-          Hay que distinguir la fecha de la última sincronización para ser honesto con el usuario.
-        </div>
-      </div>
-
-      <div class="section-heading">b) Dato persistente extra además de las charlas</div>
-      <div class="alert info" style="margin-top:8px">
+      <!-- Teoría base -->
+      <div class="section-heading" style="margin-top:0">🧠 Teoría: Offline-first y estados posibles</div>
+      <div class="alert info">
         <span>💡</span>
         <div>
-          <strong>Dato: timestamp de la última sincronización exitosa.</strong><br>
-          <strong>Cuándo actualizarlo:</strong> cada vez que el servidor devuelve una respuesta exitosa (200 OK con datos válidos).<br>
-          <strong>Qué valor conserva después del fallo:</strong> la fecha/hora de la última vez que los datos fueron frescos — así podés mostrar "datos de hace 2 días" en lugar de una pantalla vacía sin contexto.
+          <strong>Principio offline-first:</strong> una app bien diseñada siempre muestra algo útil, incluso sin internet. La diferencia clave es saber <em>por qué</em> la lista está vacía — y eso no se puede saber sin un dato extra persistido.
+        </div>
+      </div>
+
+      <p style="font-size:13px; color:var(--text-2); margin:12px 0 8px">Hay 3 estados posibles cuando Room devuelve lista vacía:</p>
+      <div class="code-block" style="font-family:monospace; white-space:pre; font-size:12px; line-height:1.7">┌─────────────────────────────────────────────────────────────────┐
+│                ROOM DEVUELVE LISTA VACÍA                        │
+├────────────────┬────────────────┬───────────────────────────────┤
+│  lastSyncAt    │  Conexión      │  Significado                  │
+├────────────────┼────────────────┼───────────────────────────────┤
+│  0 (nunca)     │  sin internet  │  Nunca cargó → pedir conexión │
+│  fecha ayer    │  sin internet  │  Datos de ayer → mostrar aviso│
+│  0 (nunca)     │  con internet  │  Cargando por primera vez...  │
+└────────────────┴────────────────┴───────────────────────────────┘</div>
+
+      <div class="section-heading">a) Mensaje que debería ver cada persona</div>
+      <div class="anti-row ok">
+        <div class="anti-title">📱 Teléfono A — lastSyncAt = 0 (nunca sincronizó)</div>
+        <div class="anti-desc">
+          <strong>¿Qué sabe la app?</strong> Nunca recibió datos del servidor. No puede distinguir "el programa tiene 0 charlas" de "nunca cargué nada". La lista vacía NO es información válida.<br><br>
+          <strong>Mensaje correcto:</strong> <em>"No hay conexión a internet. Conectate para ver el contenido."</em><br><br>
+          <strong>¿Por qué no mostrar pantalla vacía?</strong> El usuario pensaría que el evento no tiene charlas — lo que es falso. El estado real es: datos desconocidos.
+        </div>
+      </div>
+      <div class="anti-row ok">
+        <div class="anti-title">📱 Teléfono B — lastSyncAt = timestamp de ayer</div>
+        <div class="anti-desc">
+          <strong>¿Qué sabe la app?</strong> Ayer el servidor respondió con 0 charlas (válido en ese momento). Hoy no hay conexión.<br><br>
+          <strong>Mensaje correcto:</strong> <em>"Mostrando contenido del [fecha]. Conectate para ver si hubo cambios."</em><br><br>
+          <strong>¿Por qué es distinto al A?</strong> Porque la lista vacía ES información válida de ayer. El usuario lo sabe y puede decidir si esperar conexión o no.
+        </div>
+      </div>
+
+      <div class="section-heading">b) Dato persistente extra: lastSyncAt</div>
+      <div class="alert info">
+        <span>🔑</span>
+        <div>
+          <strong>¿Qué guardar?</strong> Un <code>Long</code> con el timestamp (en milisegundos) de la última sincronización <em>exitosa</em>.<br>
+          <strong>¿Dónde?</strong> <code>SharedPreferences</code> o una tabla Room con una sola fila (<code>MetaData</code>).<br>
+          <strong>¿Cuándo actualizarlo?</strong> Solo cuando el servidor devuelve HTTP 200 y los datos se escribieron en Room correctamente.
         </div>
       </div>
       <div class="code-block">
-<span class="cmt">// Room entity adicional o campo en SharedPreferences</span>
-<span class="kw">val</span> lastSyncAt: Long = System.<span class="fn">currentTimeMillis</span>()
+<span class="cmt">// DataStore / SharedPreferences — guardar timestamp</span>
+<span class="kw">suspend fun</span> <span class="fn">syncCharlas</span>() {
+    <span class="kw">val</span> respuesta = api.<span class="fn">getCharlas</span>()          <span class="cmt">// puede fallar</span>
+    db.charlaDao().<span class="fn">replaceAll</span>(respuesta)       <span class="cmt">// puede fallar</span>
+    prefs.<span class="fn">edit</span>().<span class="fn">putLong</span>(<span class="str">"lastSyncAt"</span>, System.<span class="fn">currentTimeMillis</span>()).<span class="fn">apply</span>()
+    <span class="cmt">// ↑ SOLO se llega acá si las dos líneas de arriba no lanzaron excepción</span>
+}
 
 <span class="cmt">// Al mostrar la lista:</span>
-<span class="kw">if</span> (charlas.isEmpty() &amp;&amp; lastSyncAt == <span class="str">0L</span>) {
-    <span class="fn">showError</span>(<span class="str">"Sin conexión. Conectate para cargar el contenido."</span>)
+<span class="kw">val</span> lastSync = prefs.<span class="fn">getLong</span>(<span class="str">"lastSyncAt"</span>, <span class="str">0L</span>)
+<span class="kw">if</span> (charlas.isEmpty() &amp;&amp; lastSync == <span class="str">0L</span>) {
+    <span class="fn">mostrarError</span>(<span class="str">"Sin conexión. Conectate para cargar el contenido."</span>)
 } <span class="kw">else if</span> (!isOnline) {
-    <span class="fn">showStaleWarning</span>(<span class="str">"Datos del $lastSyncAt. Sin conexión."</span>)
-}
-      </div>
+    <span class="fn">mostrarAviso</span>(<span class="str">"Datos del ${formatFecha(lastSync)}. Sin conexión."</span>)
+}</div>
     </div>
 
     <!-- ─── Pregunta 2 ─── -->
@@ -1343,53 +1371,120 @@ db.<span class="fn">transaction</span>(tx => {
       <div class="card-header">
         <div class="card-icon" style="background:#FFF3E0">⭐</div>
         <div>
-          <div class="card-title">Contexto</div>
-          <div class="card-subtitle">Antes de actualizar: charla 11 en Mi agenda, 24 en catálogo sin marcar. Se inicia descarga. Mientras espera, la usuaria agrega la 24 a Mi agenda. La respuesta trae: retira la 11, mantiene la 24, agrega la 90.</div>
+          <div class="card-title">Contexto del problema</div>
+          <div class="card-subtitle">Antes de actualizar: charla 11 en Mi agenda, 24 en catálogo sin marcar. Se inicia descarga. Mientras espera, la usuaria agrega la 24 a Mi agenda. La respuesta del servidor trae: retira la 11, mantiene la 24, agrega la 90.</div>
         </div>
       </div>
 
-      <div class="section-heading" style="margin-top:0">a) Tabla — estado al terminar</div>
+      <div class="section-heading" style="margin-top:0">🧠 Teoría: Race condition en datos locales</div>
+      <div class="alert info">
+        <span>💡</span>
+        <div>
+          <strong>Race condition</strong> = dos operaciones corren "al mismo tiempo" y la que termina segunda pisa a la primera sin saberlo.<br><br>
+          En este caso: la descarga del servidor y la acción del usuario sobre favoritas corren en paralelo. El problema aparece cuando el Repository usa el estado de favoritas que leyó <em>al inicio</em> de la descarga, en vez del estado <em>actual</em> al momento de escribir.
+        </div>
+      </div>
+
+      <div class="code-block" style="font-family:monospace; white-space:pre; font-size:12px; line-height:1.7">LÍNEA DE TIEMPO DEL BUG:
+
+t=0  │  Room: charlas = [11★, 24, ...]
+     │  Repository lee favoritas: {11}            ← snapshot viejo
+     │
+t=1  │  Repository empieza descarga del servidor
+     │
+t=2  │  USUARIO marca charla 24 como favorita
+     │  Room.favoritas = {11, 24}                 ← estado actual
+     │
+t=3  │  Servidor responde: [24, 90]
+     │  Repository combina con snapshot {11}       ← usa el VIEJO
+     │  Resultado: 24.esFavorita = false           ← ¡BUG! pisó la acción del usuario
+     │             90.esFavorita = false
+
+LÍNEA DE TIEMPO CORRECTA:
+
+t=3  │  Servidor responde: [24, 90]
+     │  Repository lee favoritas AHORA: {11, 24}  ← lee el ACTUAL
+     │  Resultado: 24.esFavorita = true            ← correcto
+     │             90.esFavorita = false</div>
+
+      <div class="section-heading">a) Tabla — estado al terminar (correcto)</div>
       <div class="table-wrap">
         <table>
           <tr>
             <th>Charla</th>
             <th>¿En catálogo?</th>
             <th>¿En Mi agenda?</th>
+            <th>¿Por qué?</th>
           </tr>
           <tr>
             <td><strong>11</strong></td>
-            <td>No <span style="color:var(--red)">— la API la retiró</span></td>
-            <td>No <span style="color:var(--red)">— se elimina junto con el catálogo</span></td>
+            <td>No <span style="color:var(--red)">— servidor la retiró</span></td>
+            <td>No <span style="color:var(--red)">— ya no existe en catálogo</span></td>
+            <td style="font-size:12px; color:var(--text-2)">La charla 11 dejó de existir. No se puede tener en agenda algo que ya no está en el catálogo.</td>
           </tr>
           <tr>
             <td><strong>24</strong></td>
-            <td>Sí <span style="color:var(--green)">— la API la mantuvo</span></td>
-            <td>Sí <span style="color:var(--green)">— la usuaria la marcó durante la descarga</span></td>
+            <td>Sí <span style="color:var(--green)">— servidor la mantuvo</span></td>
+            <td>Sí <span style="color:var(--green)">— usuario la marcó durante descarga</span></td>
+            <td style="font-size:12px; color:var(--text-2)">La acción del usuario a t=2 debe preservarse. Este es el caso crítico.</td>
           </tr>
           <tr>
             <td><strong>90</strong></td>
-            <td>Sí <span style="color:var(--green)">— la API la agregó</span></td>
-            <td>No <span style="color:var(--text-2)">— nunca fue marcada</span></td>
+            <td>Sí <span style="color:var(--green)">— servidor la agregó</span></td>
+            <td>No — nunca fue marcada</td>
+            <td style="font-size:12px; color:var(--text-2)">Charla nueva, el usuario no la conocía. Comienza desmarcada.</td>
           </tr>
         </table>
       </div>
-      <div class="alert info" style="margin-top:12px">
-        <span>🔑</span>
-        <div><strong>Regla clave:</strong> el catálogo se reemplaza con lo que dice el servidor. Mi agenda es estado <em>local del usuario</em> — se conserva para las charlas que siguen en el catálogo, y se pierde para las que el servidor quitó (11 ya no existe).</div>
-      </div>
 
-      <div class="section-heading">b) Acción de la usuaria que se pierde y cómo evitarlo</div>
+      <div class="section-heading">b) Acción perdida y cómo evitarlo</div>
       <div class="anti-row">
-        <div class="anti-title">🔴 Acción perdida: la usuaria agregó la 24 a Mi agenda durante la descarga</div>
-        <div class="anti-desc">Si el Repository guardó una copia de favoritas ANTES de iniciar la descarga y la usa para restaurar al recibir la respuesta, sobreescribiría el estado nuevo con el viejo → la 24 vuelve a "no marcada".</div>
-      </div>
-      <div class="anti-row ok">
-        <div class="anti-title">✅ Cómo evitarlo: no guardar snapshot de favoritas al inicio</div>
+        <div class="anti-title">🔴 El bug: snapshot de favoritas al inicio de la descarga</div>
         <div class="anti-desc">
-          <strong>Implementación correcta:</strong> el Repository hace un JOIN entre el catálogo nuevo del servidor y el estado actual de favoritas en Room <em>en el momento de escribir</em>, no de leer. Así la marca que hizo la usuaria durante la descarga ya está en Room y se conserva.<br><br>
-          Alternativa: usar una tabla separada para "charlas favoritas" (solo IDs) que el servidor nunca toca. Al actualizar el catálogo se hace un LEFT JOIN, no un replace total.
+          Si el Repository hace <code>val favs = db.getIds()</code> <em>antes</em> de llamar a la API y luego usa ese snapshot para combinar con la respuesta, pisa la acción que el usuario realizó mientras esperaba. La charla 24 vuelve a "no marcada" aunque el usuario la marcó.
         </div>
       </div>
+      <div class="anti-row ok">
+        <div class="anti-title">✅ Solución A: leer favoritas al momento de escribir</div>
+        <div class="anti-desc">
+          <strong>Principio:</strong> leer el estado de Room lo más tarde posible — justo antes de escribir, cuando ya tenés la respuesta del servidor.
+        </div>
+      </div>
+      <div class="code-block">
+<span class="cmt">// ❌ MAL — lee favoritas al inicio (snapshot viejo)</span>
+<span class="kw">suspend fun</span> <span class="fn">sync</span>() {
+    <span class="bad"><span class="kw">val</span> favs = db.charlaDao().<span class="fn">getFavoritasIds</span>()   <span class="cmt">// lee ANTES de la red</span></span>
+    <span class="kw">val</span> remoto = api.<span class="fn">getCharlas</span>()
+    <span class="kw">val</span> merged = remoto.<span class="fn">map</span> { it.<span class="fn">copy</span>(esFavorita = it.id <span class="kw">in</span> favs) }
+    db.charlaDao().<span class="fn">replaceAll</span>(merged)   <span class="cmt">// pisa acción del usuario</span>
+}
+
+<span class="cmt">// ✅ BIEN — lee favoritas al momento de escribir</span>
+<span class="kw">suspend fun</span> <span class="fn">sync</span>() {
+    <span class="kw">val</span> remoto = api.<span class="fn">getCharlas</span>()
+    <span class="good"><span class="kw">val</span> favs = db.charlaDao().<span class="fn">getFavoritasIds</span>()   <span class="cmt">// lee DESPUÉS de la red</span></span>
+    <span class="kw">val</span> merged = remoto.<span class="fn">map</span> { it.<span class="fn">copy</span>(esFavorita = it.id <span class="kw">in</span> favs) }
+    db.charlaDao().<span class="fn">replaceAll</span>(merged)
+}</div>
+      <div class="anti-row ok">
+        <div class="anti-title">✅ Solución B (más robusta): tabla separada para favoritas</div>
+        <div class="anti-desc">
+          Usar una tabla <code>Favoritas(charlaId: Int)</code> que el servidor <strong>nunca toca</strong>. Al actualizar el catálogo se hace <code>replaceAll</code> solo en la tabla de charlas, sin modificar favoritas. Al leer, se hace un JOIN. Así las dos tablas son completamente independientes y no hay posibilidad de race condition.
+        </div>
+      </div>
+      <div class="code-block">
+<span class="cmt">// Tabla separada — el servidor nunca la toca</span>
+<span class="kw">@Entity</span> <span class="kw">data class</span> <span class="fn">Favorita</span>(<span class="kw">@PrimaryKey val</span> charlaId: Int)
+
+<span class="cmt">// Al sincronizar — solo toca la tabla de charlas</span>
+<span class="kw">suspend fun</span> <span class="fn">sync</span>() {
+    <span class="kw">val</span> remoto = api.<span class="fn">getCharlas</span>()
+    db.charlaDao().<span class="fn">replaceAll</span>(remoto)   <span class="cmt">// no toca favoritas</span>
+}
+
+<span class="cmt">// Al leer — JOIN entre charlas y favoritas</span>
+<span class="kw">@Query</span>(<span class="str">"SELECT c.*, (f.charlaId IS NOT NULL) AS esFavorita FROM charlas c LEFT JOIN favoritas f ON c.id = f.charlaId"</span>)
+<span class="kw">fun</span> <span class="fn">getCharlasConFavoritas</span>(): Flow&lt;List&lt;CharlaConFavorita&gt;&gt;</div>
     </div>
 
     <!-- ─── Pregunta 3 ─── -->
@@ -1398,45 +1493,99 @@ db.<span class="fn">transaction</span>(tx => {
       <div class="card-header">
         <div class="card-icon" style="background:#E8F5E9">🔙</div>
         <div>
-          <div class="card-title">Contexto</div>
-          <div class="card-subtitle">Elegís Día 2 y tema Datos, abrís el detalle de una charla y rotás el teléfono. Después enviás la app al fondo. Android termina el proceso para liberar memoria. Volvés desde Recientes a la misma tarea.</div>
+          <div class="card-title">Contexto del problema</div>
+          <div class="card-subtitle">Elegís Día 2 y tema Datos, abrís el detalle de una charla, rotás el teléfono, enviás la app al fondo. Android mata el proceso para liberar memoria. Volvés desde Recientes. ¿Qué pantalla aparece? ¿Los filtros se mantienen al tocar Volver?</div>
         </div>
       </div>
 
-      <div class="section-heading" style="margin-top:0">a) Pantalla esperada al volver + filtros al tocar Volver</div>
-      <div class="anti-row ok">
-        <div class="anti-title">✅ Pantalla esperada: el detalle de la misma charla</div>
-        <div class="anti-desc">Android recrea la tarea desde el back stack. La Activity de detalle se muestra primero. Al tocar Volver, el sistema navega al back stack guardado → volvés a la lista de Día 2 / tema Datos, con esos filtros aplicados.</div>
-      </div>
-      <div class="alert info" style="margin-top:8px">
+      <div class="section-heading" style="margin-top:0">🧠 Teoría: Muerte del proceso y back stack</div>
+      <div class="alert info">
         <span>💡</span>
-        <div>Esto funciona solo si los filtros (día, tema) y el ID de la charla están guardados en el <strong>back stack</strong> (como argumentos de navegación o en <code>SavedStateHandle</code>). Si se guardan solo en variables en memoria, se pierden al morir el proceso.</div>
+        <div>
+          <strong>Cuando Android mata el proceso</strong>, toda la memoria RAM se borra: variables locales, objetos en el heap, ViewModels, todo. <strong>Pero el back stack de navegación sobrevive</strong> — Android lo serializa en disco y lo restaura al volver desde Recientes.<br><br>
+          El problema: si el ID de la charla o los filtros estaban guardados solo en un <code>MutableStateFlow</code> normal (en memoria), se pierden. <code>SavedStateHandle</code> los serializa junto con el back stack.
+        </div>
       </div>
 
-      <div class="section-heading">b) Dónde guardar: identificador de charla, día y tema</div>
+      <div class="code-block" style="font-family:monospace; white-space:pre; font-size:12px; line-height:1.7">¿QUÉ SOBREVIVE A LA MUERTE DEL PROCESO?
+
+  ✅ Back stack (Android lo serializa automáticamente)
+  ✅ Arguments de navegación (quedan en el back stack)
+  ✅ SavedStateHandle (serializado junto al back stack)
+  ❌ Variables de ViewModel (en memoria, se borra todo)
+  ❌ MutableStateFlow normal (en memoria)
+  ❌ Variables locales de Activity/Fragment
+
+FLUJO AL VOLVER DESDE RECIENTES:
+
+  Android lee el back stack serializado
+       │
+       ▼
+  Recrea la Activity de DETALLE (la que estaba en foco)
+       │
+       ▼
+  El ViewModel de detalle recibe el charlaId desde SavedStateHandle
+       │
+       ▼
+  Usuario toca "Volver" → Android sube al back stack
+       │
+       ▼
+  Recrea la Activity de LISTA
+       │
+       ▼
+  El ViewModel de lista recupera filtros desde SavedStateHandle
+  (día = "Día 2", tema = "Datos")</div>
+
+      <div class="section-heading">a) Pantalla esperada al volver</div>
+      <div class="anti-row ok">
+        <div class="anti-title">✅ Pantalla esperada: el detalle de la misma charla</div>
+        <div class="anti-desc">
+          Android recrea la tarea desde el back stack serializado. La pantalla más reciente (detalle) se muestra primero. Al tocar Volver, el sistema navega hacia la pantalla anterior (lista) con los filtros de Día 2 / tema Datos, si estaban guardados correctamente.
+        </div>
+      </div>
+
+      <div class="section-heading">b) Dónde guardar cada dato y por qué</div>
       <div class="table-wrap">
         <table>
-          <tr><th>Dato</th><th>Dónde guardar</th><th>Por qué</th></tr>
+          <tr><th>Dato</th><th>Mecanismo correcto</th><th>Por qué sobrevive</th></tr>
           <tr>
-            <td>ID de la charla</td>
-            <td><code>SavedStateHandle</code> en el ViewModel, o como argumento de navegación</td>
-            <td>Sobrevive muerte del proceso y rotación</td>
+            <td><strong>ID de la charla</strong></td>
+            <td><code>SavedStateHandle["charlaId"]</code> en el ViewModel de detalle, o como argumento de navegación</td>
+            <td>SavedStateHandle se serializa con el back stack. Sobrevive muerte del proceso Y rotación.</td>
           </tr>
           <tr>
-            <td>Día y tema (filtros)</td>
-            <td><code>SavedStateHandle</code> en el ViewModel de la lista</td>
-            <td>Al volver desde el detalle, la lista los recupera automáticamente</td>
+            <td><strong>Filtro día</strong></td>
+            <td><code>savedStateHandle.getStateFlow("dia", "")</code> en el ViewModel de lista</td>
+            <td>Mismo mecanismo — se restaura automáticamente cuando Android recrea el ViewModel.</td>
+          </tr>
+          <tr>
+            <td><strong>Filtro tema</strong></td>
+            <td><code>savedStateHandle.getStateFlow("tema", "")</code> en el ViewModel de lista</td>
+            <td>Igual que el filtro día.</td>
           </tr>
         </table>
       </div>
+
+      <div class="section-heading">Cómo identificar el bug y corregirlo</div>
       <div class="anti-row">
-        <div class="anti-title">🔴 Si alguno se pierde — cómo identificarlo y corregirlo</div>
-        <div class="anti-desc">
-          <strong>Síntoma:</strong> al volver desde Recientes, la lista aparece sin filtros o muestra el primer ítem en lugar del detalle correcto.<br>
-          <strong>Causa probable:</strong> el filtro o ID se guarda en una variable del ViewModel con <code>MutableStateFlow</code> normal (no <code>SavedStateHandle</code>). Al morir el proceso se pierde.<br>
-          <strong>Corrección:</strong> reemplazar <code>private val _filtro = MutableStateFlow("")</code> por <code>private val _filtro = savedStateHandle.getStateFlow("filtro", "")</code>.
-        </div>
+        <div class="anti-title">🔴 Código con bug — MutableStateFlow normal</div>
+        <div class="anti-desc"><strong>Síntoma:</strong> al volver desde Recientes la lista aparece sin filtros o muestra el primer ítem en lugar del detalle correcto. Los filtros se reinician a "sin filtro".</div>
       </div>
+      <div class="code-block">
+<span class="cmt">// ❌ MAL — se pierde al morir el proceso</span>
+<span class="kw">class</span> <span class="fn">ListaViewModel</span> : ViewModel() {
+    <span class="bad"><span class="kw">private val</span> _filtroDia = MutableStateFlow(<span class="str">""</span>)</span>
+    <span class="bad"><span class="kw">private val</span> _filtroTema = MutableStateFlow(<span class="str">""</span>)</span>
+}
+
+<span class="cmt">// ✅ BIEN — sobrevive a muerte del proceso</span>
+<span class="kw">class</span> <span class="fn">ListaViewModel</span>(<span class="kw">private val</span> savedStateHandle: SavedStateHandle) : ViewModel() {
+    <span class="good"><span class="kw">val</span> filtroDia = savedStateHandle.<span class="fn">getStateFlow</span>(<span class="str">"dia"</span>, <span class="str">""</span>)</span>
+    <span class="good"><span class="kw">val</span> filtroTema = savedStateHandle.<span class="fn">getStateFlow</span>(<span class="str">"tema"</span>, <span class="str">""</span>)</span>
+
+    <span class="kw">fun</span> <span class="fn">setFiltroDia</span>(dia: String) { savedStateHandle[<span class="str">"dia"</span>] = dia }
+    <span class="kw">fun</span> <span class="fn">setFiltroTema</span>(tema: String) { savedStateHandle[<span class="str">"tema"</span>] = tema }
+}</div>
     </div>
 
     <!-- ─── Pregunta 5 ─── -->
@@ -1445,30 +1594,71 @@ db.<span class="fn">transaction</span>(tx => {
       <div class="card-header">
         <div class="card-icon" style="background:#F3E5F5">🔄</div>
         <div>
-          <div class="card-title">Contexto</div>
+          <div class="card-title">Contexto del problema</div>
           <div class="card-subtitle">Una Activity colecciona un Flow de Room con repeatOnLifecycle(STARTED). Un ViewModel descarga el programa en viewModelScope. La persona presiona Inicio → Activity pasa a STOPPED. El proceso sigue vivo.</div>
         </div>
       </div>
 
-      <div class="section-heading" style="margin-top:0">a) ¿Qué ocurre con la colección y la descarga al pasar a STOPPED? ¿Y al volver a STARTED?</div>
+      <div class="section-heading" style="margin-top:0">🧠 Teoría: Estados del ciclo de vida</div>
+      <div class="code-block" style="font-family:monospace; white-space:pre; font-size:12px; line-height:1.7">ESTADOS DEL CICLO DE VIDA DE UNA ACTIVITY:
+
+  onCreate → onStart → onResume
+                 ↑           │ usuario interactúa (RESUMED)
+                 │           ↓
+              onStop ← onPause  ← otra app al frente (STARTED → STOPPED)
+                 │
+                 ↓
+              onDestroy ← usuario cierra app / Android mata proceso
+
+ESTADOS SIMPLIFICADOS:
+  CREATED  → existe pero no visible
+  STARTED  → visible (puede estar parcialmente cubierta)
+  RESUMED  → visible y en foco (usuario interactuando)
+  STOPPED  → en fondo, no visible (pantalla de inicio, otra app)</div>
+
+      <div class="alert info">
+        <span>💡</span>
+        <div>
+          <strong>repeatOnLifecycle(STARTED)</strong> = "coleccioná el Flow solo mientras la Activity es visible". Se cancela en STOPPED (fondo), se relanza en STARTED (vuelve al frente).<br><br>
+          <strong>viewModelScope</strong> = scope del ViewModel, que vive mientras Android no destruya definitivamente la Activity (no cuando va al fondo, sino cuando el usuario la cierra o Android la elimina). Es independiente del ciclo de vida de la UI.
+        </div>
+      </div>
+
+      <div class="code-block" style="font-family:monospace; white-space:pre; font-size:12px; line-height:1.7">PRESIONA INICIO → Activity pasa a STOPPED:
+
+  repeatOnLifecycle(STARTED)   │   viewModelScope
+  ─────────────────────────────│──────────────────────────────
+  STARTED: coleccionando Flow  │   Coroutine descargando...
+           │                   │          │
+  STOPPED: ✗ SE CANCELA        │   STOPPED: sigue corriendo
+           │                   │          │
+           │                   │   Descarga termina → StateFlow actualizado
+           │                   │
+  STARTED: ✓ SE RELANZA        │   Ya terminó, StateFlow listo
+  recibe último valor del Flow  │   Activity recibe datos al instante</div>
+
+      <div class="section-heading">a) ¿Qué ocurre con cada componente?</div>
       <div class="table-wrap">
         <table>
           <tr><th>Componente</th><th>Al pasar a STOPPED</th><th>Al volver a STARTED</th></tr>
           <tr>
-            <td><strong>Colección del Flow</strong><br><code>repeatOnLifecycle(STARTED)</code></td>
-            <td>Se <strong>cancela</strong> automáticamente. La Activity deja de recibir actualizaciones de Room.</td>
-            <td>Se <strong>relanza</strong> automáticamente. Vuelve a coleccionar el Flow desde el último valor.</td>
+            <td><strong>Colección del Flow</strong><br><small><code>repeatOnLifecycle(STARTED)</code></small></td>
+            <td><strong style="color:var(--red)">Se cancela.</strong> La Activity deja de recibir actualizaciones de Room. No consume recursos innecesarios en segundo plano.</td>
+            <td><strong style="color:var(--green)">Se relanza automáticamente.</strong> Recibe el último valor emitido por el Flow de Room al instante.</td>
           </tr>
           <tr>
-            <td><strong>Descarga en viewModelScope</strong></td>
-            <td>Sigue corriendo. <code>viewModelScope</code> vive mientras el ViewModel exista, independiente del ciclo de la Activity.</td>
-            <td>Ya estaba corriendo (o terminó). El resultado ya estará en el StateFlow cuando la colección se relance.</td>
+            <td><strong>Descarga del servidor</strong><br><small><code>viewModelScope</code></small></td>
+            <td><strong style="color:var(--green)">Continúa corriendo.</strong> <code>viewModelScope</code> es independiente de la UI — vive mientras el ViewModel exista.</td>
+            <td>Ya terminó o sigue. El resultado estará en el <code>StateFlow</code> del ViewModel cuando la colección se relance.</td>
           </tr>
         </table>
       </div>
       <div class="alert ok" style="margin-top:8px">
         <span>✅</span>
-        <div><strong>Punto clave:</strong> <code>repeatOnLifecycle(STARTED)</code> desconecta y reconecta la colección sin cancelar la coroutine del ViewModel. Es la combinación correcta: no derrocha recursos cuando la app está en fondo, pero tampoco cancela la descarga.</div>
+        <div>
+          <strong>¿Por qué esta combinación es la correcta?</strong><br>
+          <code>repeatOnLifecycle(STARTED)</code> evita que la UI procese actualizaciones cuando no es visible (ahorra CPU/memoria). <code>viewModelScope</code> garantiza que la descarga no se cancele aunque el usuario vaya al home — así los datos llegan completos cuando vuelve. Son dos capas independientes que se complementan perfectamente.
+        </div>
       </div>
     </div>
 
@@ -1478,79 +1668,187 @@ db.<span class="fn">transaction</span>(tx => {
       <div class="card-header">
         <div class="card-icon" style="background:#E0F2F1">🏛</div>
         <div>
-          <div class="card-title">Contexto</div>
-          <div class="card-subtitle">El catálogo observa charlas de Room. Al actualizar, Retrofit devuelve 12 charlas nuevas pero falla la escritura local antes de confirmar. La base todavía contiene la edición anterior.</div>
+          <div class="card-title">Contexto del problema</div>
+          <div class="card-subtitle">El catálogo observa charlas de Room. Al actualizar, Retrofit devuelve 12 charlas nuevas pero falla la escritura en Room antes de confirmar. La base todavía contiene la edición anterior.</div>
         </div>
       </div>
 
-      <div class="section-heading" style="margin-top:0">a) ¿Qué lista debe observar el ViewModel y qué resultado debe comunicar el Repository?</div>
-      <div class="anti-row ok">
-        <div class="anti-title">✅ El ViewModel observa siempre Room (la fuente de verdad local)</div>
-        <div class="anti-desc">El ViewModel no debería observar directamente la respuesta de Retrofit. El flujo correcto: Retrofit → Repository escribe en Room → Room notifica el Flow → ViewModel recibe los datos.</div>
+      <div class="section-heading" style="margin-top:0">🧠 Teoría: Patrón Repository y fuente de verdad única</div>
+      <div class="alert info">
+        <span>💡</span>
+        <div>
+          <strong>Single source of truth (fuente única de verdad)</strong> = Room es la única fuente de datos para la UI. La red no alimenta directamente al ViewModel — primero escribe en Room, y Room notifica al Flow.<br><br>
+          <strong>Ventaja:</strong> la UI siempre muestra datos consistentes. Si la red falla, Room mantiene los datos anteriores. Si Room falla, la UI lo sabe a través de un estado de error.
+        </div>
       </div>
+
+      <div class="code-block" style="font-family:monospace; white-space:pre; font-size:12px; line-height:1.7">FLUJO CORRECTO (patrón Repository):
+
+  Usuario toca "Recargar"
+       │
+       ▼
+  ViewModel llama a repository.sync()
+       │
+       ▼
+  Repository llama a Retrofit (HTTP GET)
+       │
+       ├── OK → Repository escribe en Room → Room emite Flow → ViewModel recibe
+       │
+       └── Error (red o Room) → Repository devuelve Result.failure(e)
+                                     │
+                                     ▼
+                              ViewModel muestra banner de error
+                              Room NO cambió → UI sigue mostrando datos anteriores
+
+FLUJO INCORRECTO (antipatrón):
+
+  ViewModel llama a Retrofit directamente
+       │
+       ├── OK → ViewModel actualiza StateFlow con datos de red
+       │         (UI inconsistente con Room, sin cache)
+       │
+       └── Error → ViewModel muestra error (correcto accidentalmente)</div>
+
+      <div class="section-heading">a) ¿Qué lista debe observar el ViewModel?</div>
+      <div class="anti-row ok">
+        <div class="anti-title">✅ El ViewModel observa siempre Room — nunca Retrofit directamente</div>
+        <div class="anti-desc">
+          <strong>Flujo correcto:</strong> Retrofit → Repository escribe en Room → Room emite Flow → ViewModel recibe los datos actualizados automáticamente.<br><br>
+          <strong>¿Por qué Room y no Retrofit?</strong> Room persiste los datos. Si el usuario mata la app y vuelve, los datos siguen ahí. Con Retrofit directo, al reabrir la app no habría datos hasta hacer otra request.
+        </div>
+      </div>
+
+      <div class="section-heading">b) ¿Qué comunica el Repository cuando falla la escritura?</div>
       <div class="anti-row">
-        <div class="anti-title">🔴 Fallo en la escritura: ¿qué comunica el Repository?</div>
-        <div class="anti-desc">Si la escritura en Room falla, el Repository debe: <strong>(1)</strong> capturar la excepción, <strong>(2)</strong> emitir un estado de error (sealed class: <code>Result.Error(exception)</code>), y <strong>(3)</strong> NO emitir los datos de Retrofit directamente al ViewModel. La lista que ve el usuario debe ser la de Room (edición anterior), con un banner de error que diga que la actualización falló.</div>
+        <div class="anti-title">🔴 Fallo en Room.replaceAll() — ¿qué hace el Repository?</div>
+        <div class="anti-desc">
+          Si la escritura en Room falla, el Repository debe: <strong>(1)</strong> capturar la excepción, <strong>(2)</strong> devolver <code>Result.failure(e)</code>, y <strong>(3)</strong> NO emitir los datos de Retrofit directamente al ViewModel. Room no cambió → la UI sigue mostrando los datos anteriores (edición vieja) con un banner de error.
+        </div>
       </div>
       <div class="code-block">
-<span class="cmt">// Repository — patrón correcto</span>
-<span class="kw">suspend fun</span> <span class="fn">syncPrograma</span>(): <span class="fn">Result</span>&lt;Unit&gt; {
+<span class="cmt">// Repository — implementación correcta</span>
+<span class="kw">suspend fun</span> <span class="fn">syncPrograma</span>(): Result&lt;Unit&gt; {
     <span class="kw">return try</span> {
-        <span class="kw">val</span> remoto = api.<span class="fn">getPrograma</span>()
-        db.charlaDao().<span class="fn">replaceAll</span>(remoto)  <span class="cmt">// puede lanzar excepción</span>
+        <span class="kw">val</span> remoto = api.<span class="fn">getPrograma</span>()          <span class="cmt">// puede fallar</span>
+        db.charlaDao().<span class="fn">replaceAll</span>(remoto)      <span class="cmt">// puede fallar</span>
         Result.<span class="fn">success</span>(Unit)
+        <span class="cmt">// ↑ si llega acá, Room tiene los datos nuevos y el Flow se actualiza solo</span>
+    } <span class="kw">catch</span> (e: CancellationException) {
+        <span class="good">throw e</span>  <span class="cmt">// NUNCA atrapar cancelación</span>
     } <span class="kw">catch</span> (e: Exception) {
-        Result.<span class="fn">failure</span>(e)  <span class="cmt">// ViewModel muestra error, Room no cambió</span>
+        Result.<span class="fn">failure</span>(e)  <span class="cmt">// ViewModel recibe el error, Room no cambió</span>
     }
 }
 
-<span class="cmt">// ViewModel observa Room, no Retrofit</span>
-<span class="kw">val</span> charlas = db.charlaDao().<span class="fn">getAll</span>()  <span class="cmt">// Flow&lt;List&lt;Charla&gt;&gt;</span>
-      </div>
+<span class="cmt">// ViewModel — observa Room, NO Retrofit</span>
+<span class="kw">val</span> charlas: StateFlow&lt;List&lt;Charla&gt;&gt; = repository.<span class="fn">getCharlas</span>()
+    .<span class="fn">stateIn</span>(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
+
+<span class="kw">fun</span> <span class="fn">sincronizar</span>() {
+    viewModelScope.<span class="fn">launch</span> {
+        <span class="kw">val</span> result = repository.<span class="fn">syncPrograma</span>()
+        <span class="kw">if</span> (result.isFailure) _uiState.value = UiState.<span class="fn">Error</span>(<span class="str">"No se pudo actualizar"</span>)
+        <span class="cmt">// si result.isSuccess, Room ya notificó el Flow automáticamente</span>
+    }
+}</div>
     </div>
 
     <!-- ─── Pregunta 7 ─── -->
     <div class="section-heading">7. Corrutinas y cancelación</div>
     <div class="card">
       <div class="card-header">
-        <div class="card-icon" style="background:#E0F2F1">⚡</div>
+        <div class="card-icon" style="background:#FFEBEE">⚡</div>
         <div>
-          <div class="card-title">Contexto</div>
-          <div class="card-subtitle">Una función suspendida llama a Retrofit dentro de try y usa catch (e: Exception) para devolver el mismo resultado de error ante cualquier excepción. El ViewModel cancela el Job mientras la función espera la respuesta.</div>
+          <div class="card-title">Contexto del problema</div>
+          <div class="card-subtitle">Una función suspendida llama a Retrofit dentro de try–catch(Exception). El ViewModel cancela el Job mientras la función espera la respuesta. ¿Qué excepción intercepta ese catch? ¿Qué información se pierde?</div>
         </div>
       </div>
 
-      <div class="section-heading" style="margin-top:0">a) ¿Qué excepción interceptaría ese catch al cancelarse el Job? ¿Qué información se pierde?</div>
+      <div class="section-heading" style="margin-top:0">🧠 Teoría: Cancelación cooperativa en Kotlin coroutines</div>
+      <div class="alert info">
+        <span>💡</span>
+        <div>
+          <strong>Cancelación cooperativa</strong> = las coroutines no se matan a la fuerza. Cuando cancelás un Job, Kotlin le lanza una <code>CancellationException</code> para que la coroutine pueda terminar limpiamente. Para que esto funcione, la coroutine no debe atrapar esa excepción.
+        </div>
+      </div>
+
+      <div class="code-block" style="font-family:monospace; white-space:pre; font-size:12px; line-height:1.7">JERARQUÍA DE EXCEPCIONES EN KOTLIN:
+
+  Throwable
+  └── Exception                    ← catch(e: Exception) atrapa ESTO
+      ├── IOException               ← error de red legítimo
+      ├── HttpException             ← error HTTP (4xx, 5xx)
+      └── CancellationException     ← ¡TAMBIÉN ES Exception!
+          └── JobCancellationException
+
+CÓMO FUNCIONA LA CANCELACIÓN:
+
+  job.cancel()
+       │
+       ▼
+  Kotlin lanza CancellationException en el punto de suspensión
+  (en el await() de la llamada a Retrofit)
+       │
+       ├── Si la coroutine NO la atrapa → se propaga hacia arriba ✅
+       │   El scope la detecta → marca el Job como cancelado → libera recursos
+       │
+       └── Si la coroutine la atrapa con catch(e: Exception) → BUG ❌
+           La función retorna "normalmente" con un resultado de error
+           El scope cree que la coroutine terminó bien, no cancelada
+           Puede seguir ocupando memoria o mostrando errores falsos</div>
+
+      <div class="section-heading">a) ¿Qué excepción intercepta el catch? ¿Qué se pierde?</div>
       <div class="anti-row">
-        <div class="anti-title">🔴 El catch intercepta CancellationException — y eso es un bug</div>
+        <div class="anti-title">🔴 El catch(e: Exception) intercepta CancellationException</div>
         <div class="anti-desc">
-          Al cancelar el Job, Kotlin lanza <code>CancellationException</code> para interrumpir la coroutine de forma cooperativa. Si el <code>catch (e: Exception)</code> la atrapa y retorna un "resultado de error" genérico, el sistema de coroutines no puede propagarla correctamente → la cancelación no se propaga → la coroutine <strong>no se cancela</strong> aunque el ViewModel ya la descartó.
+          <code>CancellationException</code> es subclase de <code>Exception</code>. Al atraparlo con <code>catch(e: Exception)</code> y retornar un resultado de error genérico:<br>
+          <strong>(1)</strong> La cancelación no se propaga → el scope no sabe que el Job fue cancelado.<br>
+          <strong>(2)</strong> La UI puede mostrar "Error de conexión" cuando en realidad no hubo ningún error de red — el ViewModel simplemente descartó el Job.<br>
+          <strong>(3)</strong> Si el ViewModel ya no existe cuando esto ocurre, actualizar el StateFlow puede causar comportamiento indefinido.
         </div>
       </div>
-      <div class="anti-row ok">
-        <div class="anti-title">✅ Información que se pierde y por qué importa</div>
-        <div class="anti-desc">Al convertir <code>CancellationException</code> en un "error de conexión genérico": <strong>(1)</strong> se pierde la causa real (cancelación intencional vs error de red), <strong>(2)</strong> la UI puede mostrar un error al usuario cuando no hubo ningún problema de red, y <strong>(3)</strong> el scope no sabe que la coroutine terminó correctamente por cancelación.</div>
-      </div>
+
       <div class="code-block">
-<span class="cmt">// ❌ MALO — atrapa CancellationException</span>
-<span class="kw">try</span> {
-    <span class="kw">val</span> result = api.<span class="fn">getData</span>()
-} <span class="kw">catch</span> (e: Exception) {
-    <span class="bad">_state.value = State.Error("Error de conexión")</span>  <span class="cmt">// bug silencioso</span>
+<span class="cmt">// ❌ MALO — atrapa CancellationException silenciosamente</span>
+<span class="kw">suspend fun</span> <span class="fn">fetchData</span>(): String {
+    <span class="kw">return try</span> {
+        api.<span class="fn">getData</span>()           <span class="cmt">// si se cancela acá, lanza CancellationException</span>
+    } <span class="kw">catch</span> (e: Exception) {  <span class="cmt">// ← atrapa CancellationException también</span>
+        <span class="bad">_state.value = UiState.Error("Error de conexión")</span>  <span class="cmt">// bug silencioso</span>
+        <span class="bad"><span class="str">"error"</span></span>                  <span class="cmt">// retorna "normalmente", cancelación bloqueada</span>
+    }
 }
 
-<span class="cmt">// ✅ BIEN — no interceptar cancelación</span>
-<span class="kw">try</span> {
-    <span class="kw">val</span> result = api.<span class="fn">getData</span>()
-} <span class="kw">catch</span> (e: CancellationException) {
-    <span class="good">throw e</span>  <span class="cmt">// re-lanzar siempre</span>
-} <span class="kw">catch</span> (e: Exception) {
-    _state.value = <span class="fn">State.Error</span>(e.message)
+<span class="cmt">// ✅ OPCIÓN 1 — re-lanzar CancellationException siempre</span>
+<span class="kw">suspend fun</span> <span class="fn">fetchData</span>(): String {
+    <span class="kw">return try</span> {
+        api.<span class="fn">getData</span>()
+    } <span class="kw">catch</span> (e: CancellationException) {
+        <span class="good">throw e</span>  <span class="cmt">// SIEMPRE re-lanzar — deja que el scope la maneje</span>
+    } <span class="kw">catch</span> (e: Exception) {
+        _state.value = <span class="fn">UiState.Error</span>(e.message ?: <span class="str">"Error desconocido"</span>)
+        <span class="str">"error"</span>
+    }
 }
-      </div>
+
+<span class="cmt">// ✅ OPCIÓN 2 — más limpio: atrapar solo excepciones específicas</span>
+<span class="kw">suspend fun</span> <span class="fn">fetchData</span>(): String {
+    <span class="kw">return try</span> {
+        api.<span class="fn">getData</span>()
+    } <span class="kw">catch</span> (e: IOException) {       <span class="cmt">// solo errores de red</span>
+        _state.value = <span class="fn">UiState.Error</span>(<span class="str">"Sin conexión"</span>)
+        <span class="str">"error"</span>
+    } <span class="kw">catch</span> (e: HttpException) {     <span class="cmt">// solo errores HTTP</span>
+        _state.value = <span class="fn">UiState.Error</span>(<span class="str">"Error del servidor: ${e.code()}"</span>)
+        <span class="str">"error"</span>
+    }
+    <span class="cmt">// CancellationException no está atrapada → se propaga correctamente</span>
+}</div>
       <div class="alert warn" style="margin-top:8px">
         <span>⚠️</span>
-        <div><strong>Regla:</strong> <code>CancellationException</code> <em>nunca</em> debe ser silenciada en una coroutine. Si atrapás <code>Exception</code>, siempre re-lanzá <code>CancellationException</code>. Alternativamente, atrapá solo <code>IOException</code> o <code>HttpException</code> para ser más específico.</div>
+        <div>
+          <strong>Regla de oro:</strong> <code>CancellationException</code> <em>nunca</em> debe ser silenciada. Si usás <code>catch(e: Exception)</code>, siempre incluí <code>catch(e: CancellationException) { throw e }</code> primero. La opción más limpia es atrapar solo <code>IOException</code> / <code>HttpException</code> — así <code>CancellationException</code> se propaga automáticamente.
+        </div>
       </div>
     </div>
 
