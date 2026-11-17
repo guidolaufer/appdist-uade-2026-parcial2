@@ -382,6 +382,7 @@
   <button class="tab" onclick="showSection('sensores')">📡 Sensores</button>
   <button class="tab" onclick="showSection('teoria')">📋 Teoría Q&amp;A</button>
   <button class="tab" onclick="showSection('practicar')">🎯 Practicar</button>
+  <button class="tab" onclick="showSection('simulacro')">🧪 Simulacro</button>
   <button class="tab" onclick="showSection('examen')">📝 Examen Real</button>
 </div>
 
@@ -2001,10 +2002,566 @@ CÓMO FUNCIONA LA CANCELACIÓN:
 
   </div>
 
-</div>
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SIMULACRO                                       -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div id="simulacro" class="section">
 
-<script>
-  function showSection(id) {
+    <div class="alert info">
+      <span>🧪</span>
+      <div><strong>Modo examen:</strong> intentá responder cada pregunta <em>sin ver las respuestas</em>. Escribí en papel, luego expandí para comparar. Las preguntas son del estilo del parcial real: situación → análisis → corrección.</div>
+    </div>
+
+    <!-- ─── UNIDAD 1: Lifecycle ─── -->
+    <div class="section-heading">Unidad 1 — Activity Lifecycle</div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#E3F2FD">📱</div>
+        <div>
+          <div class="card-title">P1 — Rotación de pantalla</div>
+          <div class="card-subtitle">Dificultad media · Lifecycle + ViewModel</div>
+        </div>
+      </div>
+      <p>Una Activity muestra el nombre de un usuario descargado de internet. Cuando el usuario rota el dispositivo, la app vuelve a hacer el pedido HTTP y muestra un spinner por 2 segundos.</p>
+      <div class="alert warn" style="margin-top:12px"><span>⚠️</span><div>El jefe dice: <em>"La red siempre va a ser rápida, no importa."</em></div></div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          a) ¿Por qué la rotación dispara el fetch de nuevo? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          Al rotar, Android destruye y recrea la Activity (<code>onDestroy → onCreate</code>). Si el fetch se inicia en <code>onCreate</code> y el resultado se guarda en la Activity directamente (variable o campo), ese dato se pierde al destruirse. La Activity nueva arranca desde cero y vuelve a pedir los datos.
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          b) ¿Por qué el argumento del jefe es incorrecto? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          Incluso si la red es rápida, hacer un pedido innecesario consume datos móviles del usuario, aumenta la latencia perceptible y puede causar problemas si hay muchas rotaciones seguidas (race conditions de múltiples requests). Además, en entornos reales la red puede fallar o ser lenta.
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          c) ¿Cómo se corrige? Nombrá la clase que usarías y por qué sobrevive a la rotación. <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          Se usa <code>ViewModel</code>. El ViewModel sobrevive a la rotación porque Android lo almacena en un <code>ViewModelStore</code> asociado al scope de la Activity, no a la instancia. Cuando la Activity se destruye por rotación, el <code>ViewModelStore</code> se <em>retiene</em>. La nueva Activity recibe el mismo ViewModel con el dato ya cargado.
+          <div class="code-block" style="margin-top:8px"><span class="kw">class</span> <span class="fn">UserViewModel</span> : ViewModel() {
+    <span class="kw">private val</span> _user = MutableStateFlow&lt;User?&gt;(<span class="kw">null</span>)
+    <span class="kw">val</span> user = _user.asStateFlow()
+
+    <span class="kw">init</span> { viewModelScope.<span class="fn">launch</span> { _user.value = api.<span class="fn">getUser</span>() } }
+    <span class="cmt">// init se llama UNA sola vez — no al rotar</span>
+}</div>
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          d) ¿El ViewModel sobrevive si el sistema mata el proceso? ¿Qué usarías en ese caso? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          No. El ViewModel <strong>NO</strong> sobrevive a la muerte del proceso (el sistema puede matar el proceso por falta de RAM cuando la app está en background). Para sobrevivir a eso se necesita <code>SavedStateHandle</code> (para datos pequeños, serializables) o Room/SharedPreferences (para datos persistentes). <code>SavedStateHandle</code> usa el mismo mecanismo de <code>onSaveInstanceState</code>.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#E8F5E9">🔄</div>
+        <div>
+          <div class="card-title">P2 — Secuencia de callbacks</div>
+          <div class="card-subtitle">Dificultad alta · Lifecycle pairs</div>
+        </div>
+      </div>
+      <p>Describí la secuencia exacta de callbacks del lifecycle para los siguientes escenarios. Incluí los métodos <strong>de ambas instancias</strong> cuando hay recreación.</p>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          a) El usuario abre la app, usa la pantalla, y toca "Inicio" del celular (home button) <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          <code>onCreate → onStart → onResume</code> (app visible y en foco)<br>
+          Al tocar Home: <code>onPause → onStop</code> (app en background, no visible)<br><br>
+          <strong>¿Por qué onPause antes de onStop?</strong> <code>onPause</code> es para "dejás de tener foco" (otro proceso puede arrancar). <code>onStop</code> es para "ya no sos visible". Siempre ocurren en ese orden.
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          b) El usuario rota el dispositivo <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          Instancia vieja: <code>onPause → onStop → onDestroy</code><br>
+          Instancia nueva: <code>onCreate → onStart → onResume</code><br><br>
+          Total: 6 callbacks. Entre <code>onDestroy</code> y el nuevo <code>onCreate</code>, el sistema llama internamente a <code>onSaveInstanceState</code> para guardar el estado de la UI.
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          c) Aparece un diálogo del sistema (ej: permiso de ubicación) encima de la Activity <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          Solo: <code>onPause</code> (porque el diálogo toma el foco, pero la Activity sigue siendo <em>visible</em> parcialmente)<br><br>
+          <strong>No se llama <code>onStop</code></strong> porque la Activity aún es visible. <code>onStop</code> ocurre solo cuando ya no hay ninguna parte de la Activity en pantalla.
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── UNIDAD 2: MVVM + Coroutines ─── -->
+    <div class="section-heading">Unidad 2 — MVVM, StateFlow y Coroutines</div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#F3E5F5">🏛</div>
+        <div>
+          <div class="card-title">P3 — Detectar antipatrones en ViewModel</div>
+          <div class="card-subtitle">Dificultad alta · MVVM + UDF</div>
+        </div>
+      </div>
+      <p>Analizá el siguiente código y encontrá <strong>todos los problemas</strong>:</p>
+      <div class="code-block"><span class="kw">class</span> <span class="fn">SearchActivity</span> : AppCompatActivity() {
+    <span class="kw">private lateinit var</span> viewModel: SearchViewModel
+
+    <span class="kw">override fun</span> <span class="fn">onCreate</span>(savedInstanceState: Bundle?) {
+        <span class="kw">super</span>.<span class="fn">onCreate</span>(savedInstanceState)
+        viewModel = SearchViewModel()   <span class="cmt">// ← (A)</span>
+
+        lifecycleScope.<span class="fn">launch</span> {
+            viewModel.results.<span class="fn">collect</span> { items ->   <span class="cmt">// ← (B)</span>
+                adapter.<span class="fn">submitList</span>(items)
+            }
+        }
+    }
+
+    <span class="kw">fun</span> <span class="fn">onSearch</span>(query: String) {
+        viewModel.results.value = db.itemDao().<span class="fn">search</span>(query)  <span class="cmt">// ← (C)</span>
+    }
+}
+
+<span class="kw">class</span> <span class="fn">SearchViewModel</span> : ViewModel() {
+    <span class="kw">val</span> results = MutableStateFlow&lt;List&lt;Item&gt;&gt;(<span class="fn">emptyList</span>())
+
+    <span class="kw">fun</span> <span class="fn">search</span>(query: String) {   <span class="cmt">// ← (D) — no se usa</span>
+        viewModelScope.<span class="fn">launch</span>(Dispatchers.Main) {   <span class="cmt">// ← (E)</span>
+            results.value = db.itemDao().<span class="fn">search</span>(query)
+        }
+    }
+}</div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          Respuesta: identificá y explicá cada bug marcado (A) a (E) <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          <strong>(A) <code>SearchViewModel()</code> — no usar constructor directo</strong><br>
+          Hay que usar <code>ViewModelProvider</code> o <code>by viewModels()</code>. Con constructor directo, el ViewModel NO sobrevive a la rotación porque Android no lo puede gestionar.<br><br>
+          <strong>(B) <code>collect</code> sin <code>repeatOnLifecycle</code></strong><br>
+          En <code>lifecycleScope.launch { ... collect { } }</code>, la colección continúa incluso cuando la Activity está en background (<code>onStop</code>). Puede procesar eventos cuando la Activity no es visible. Lo correcto: <code>repeatOnLifecycle(STARTED)</code>.<br><br>
+          <strong>(C) lógica de negocio en la Activity + acceso a DB en hilo principal</strong><br>
+          <code>db.itemDao().search()</code> es una llamada síncrona a Room en el hilo principal → crash por <code>NetworkOnMainThreadException</code> (en Room equivale a un error de hilo). La lógica debería estar en el ViewModel.<br><br>
+          <strong>(D) <code>fun search()</code> del ViewModel no se usa</strong><br>
+          La Activity ignora el método correcto del ViewModel y hace la query directamente. Violación de MVVM: la Activity no debería saber cómo se obtienen los datos.<br><br>
+          <strong>(E) <code>Dispatchers.Main</code> para acceso a DB</strong><br>
+          Las queries a Room deben ejecutarse en <code>Dispatchers.IO</code>. <code>Dispatchers.Main</code> es el hilo de UI; hacer I/O ahí bloquea la interfaz.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#E3F2FD">💧</div>
+        <div>
+          <div class="card-title">P4 — StateFlow vs Flow</div>
+          <div class="card-subtitle">Dificultad media · Reactive state</div>
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          a) ¿Cuál es la diferencia principal entre <code>Flow</code> y <code>StateFlow</code>? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          <strong>Flow</strong> = frío (cold). No emite nada hasta que alguien lo colecta. Cada colector recibe una secuencia nueva. No tiene valor actual.<br>
+          <strong>StateFlow</strong> = caliente (hot). Siempre tiene un valor actual. Cuando un nuevo collector se suscribe, recibe inmediatamente el último valor emitido. Ideal para representar estado de UI.
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          b) El ViewModel tiene <code>private val _uiState = MutableStateFlow&lt;UiState&gt;(UiState.Loading)</code>. ¿Por qué se expone como <code>StateFlow</code> y no como <code>MutableStateFlow</code>? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          Encapsulamiento. Solo el ViewModel debe poder modificar el estado. Si la UI recibe un <code>MutableStateFlow</code>, podría llamar a <code>.value = ...</code> directamente desde la Activity/Composable, violando el principio de <strong>Unidirectional Data Flow</strong> (UDF): las acciones deben ir de la UI al ViewModel, nunca la UI modificar el estado directamente.
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          c) ¿Por qué se recomienda <code>collectAsStateWithLifecycle()</code> en Compose en lugar de <code>collectAsState()</code>? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          <code>collectAsState()</code> colecta el Flow mientras la Composable existe en la composición, sin importar si la Activity/Fragment está en background.<br>
+          <code>collectAsStateWithLifecycle()</code> respeta el ciclo de vida: pausa la colección cuando el lifecycle está en STOPPED y la reanuda en STARTED. Esto ahorra batería y evita procesar actualizaciones cuando la UI no es visible.
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── UNIDAD 3: Persistencia ─── -->
+    <div class="section-heading">Unidad 3 — Persistencia Local (Room)</div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#FFF3E0">🗄</div>
+        <div>
+          <div class="card-title">P5 — Room: Entity, DAO y Migrations</div>
+          <div class="card-subtitle">Dificultad alta · Room + SQL</div>
+        </div>
+      </div>
+      <p>Tenés una app de notas con la siguiente Entity:</p>
+      <div class="code-block"><span class="kw">@Entity</span>(tableName = <span class="str">"notas"</span>)
+<span class="kw">data class</span> <span class="fn">Nota</span>(
+    <span class="kw">@PrimaryKey</span>(autoGenerate = <span class="kw">true</span>) <span class="kw">val</span> id: Int = 0,
+    <span class="kw">val</span> titulo: String,
+    <span class="kw">val</span> cuerpo: String
+)</div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          a) El cliente pide agregar una fecha de creación. Escribí la migración correcta (de versión 1 a 2). <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          <div class="code-block"><span class="kw">val</span> MIGRATION_1_2 = <span class="kw">object</span> : Migration(1, 2) {
+    <span class="kw">override fun</span> <span class="fn">migrate</span>(db: SupportSQLiteDatabase) {
+        db.<span class="fn">execSQL</span>(
+            <span class="str">"ALTER TABLE notas ADD COLUMN fechaCreacion INTEGER NOT NULL DEFAULT 0"</span>
+        )
+        <span class="cmt">// DEFAULT 0 → notas viejas quedan con epoch 0 (1970-01-01)</span>
+        <span class="cmt">// No se puede usar DEFAULT CURRENT_TIMESTAMP porque Room usa Long (ms)</span>
+    }
+}
+
+<span class="cmt">// En la DB:</span>
+<span class="kw">@Database</span>(entities = [Nota::<span class="kw">class</span>], version = 2)
+<span class="kw">abstract class</span> <span class="fn">AppDatabase</span> : RoomDatabase() {
+    <span class="kw">abstract fun</span> <span class="fn">notaDao</span>(): NotaDao
+    <span class="kw">companion object</span> {
+        <span class="kw">fun</span> <span class="fn">buildDatabase</span>(context: Context) =
+            Room.<span class="fn">databaseBuilder</span>(context, AppDatabase::<span class="kw">class</span>.java, <span class="str">"app.db"</span>)
+                .<span class="fn">addMigrations</span>(MIGRATION_1_2)   <span class="cmt">// ← OBLIGATORIO</span>
+                .<span class="fn">build</span>()
+    }
+}</div>
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          b) ¿Por qué no se puede simplemente eliminar la tabla y recrearla? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          Porque los usuarios ya tienen datos en esa tabla. Si se hace <code>DROP TABLE + CREATE TABLE</code>, se pierden todas las notas existentes. La migración con <code>ALTER TABLE ADD COLUMN</code> agrega la columna nueva manteniendo todas las filas existentes intactas, con el valor por defecto definido.
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          c) ¿Cuál es la diferencia entre un DAO que retorna <code>Flow&lt;List&lt;Nota&gt;&gt;</code> y uno que retorna <code>suspend fun getNota(): List&lt;Nota&gt;</code>? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          <strong><code>Flow&lt;List&lt;Nota&gt;&gt;</code></strong> = Room emite automáticamente una nueva lista cada vez que la tabla cambia. El ViewModel recibe las actualizaciones sin necesidad de hacer queries adicionales. Ideal para listas que se muestran en la UI.<br><br>
+          <strong><code>suspend fun getNota()</code></strong> = query one-shot. Se ejecuta una vez y devuelve el resultado. Si la tabla cambia después, el ViewModel no se entera automáticamente. Ideal para operaciones puntuales (verificar si existe algo antes de insertar).
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#FFEBEE">🔒</div>
+        <div>
+          <div class="card-title">P6 — SQL Injection</div>
+          <div class="card-subtitle">Dificultad media · Seguridad</div>
+        </div>
+      </div>
+      <p>Un usuario escribe en el campo de búsqueda: <code>' OR '1'='1</code></p>
+      <div class="code-block"><span class="cmt">// Código vulnerable:</span>
+<span class="kw">fun</span> <span class="fn">buscarNotas</span>(query: String): List&lt;Nota&gt; {
+    <span class="bad"><span class="kw">return</span> db.<span class="fn">rawQuery</span>(<span class="str">"SELECT * FROM notas WHERE titulo LIKE '%$query%'"</span>, <span class="kw">null</span>)</span>
+}</div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          a) ¿Qué retorna esa query con la entrada del usuario? ¿Por qué es peligroso? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          La query queda: <code>SELECT * FROM notas WHERE titulo LIKE '%' OR '1'='1%'</code><br>
+          Como <code>'1'='1'</code> es siempre verdadero, retorna <strong>todas las notas</strong>, independientemente del título. Es peligroso porque permite acceder a datos que el usuario no debería ver. Con inputs más maliciosos se pueden ejecutar múltiples queries (<code>; DROP TABLE notas --</code>).
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          b) ¿Cómo se corrige en Room? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          Usando <strong>parámetros de binding</strong> (<code>?</code> o <code>:param</code> en Room). Room escapa automáticamente el valor:
+          <div class="code-block"><span class="kw">@Dao</span>
+<span class="kw">interface</span> <span class="fn">NotaDao</span> {
+    <span class="kw">@Query</span>(<span class="str">"SELECT * FROM notas WHERE titulo LIKE :busqueda"</span>)
+    <span class="kw">suspend fun</span> <span class="fn">buscarPorTitulo</span>(busqueda: String): List&lt;Nota&gt;
+    <span class="cmt">// Room convierte :busqueda en un ? y pasa el valor por separado</span>
+    <span class="cmt">// La entrada '%' OR '1'='1 queda como texto literal, no como SQL</span>
+}
+
+<span class="cmt">// Uso:</span>
+dao.<span class="fn">buscarPorTitulo</span>(<span class="str">"%$query%"</span>)   <span class="cmt">// el % es del LIKE, no es peligroso así</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── UNIDAD 4: Retrofit ─── -->
+    <div class="section-heading">Unidad 4 — Red con Retrofit</div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#E0F2F1">🌐</div>
+        <div>
+          <div class="card-title">P7 — Tres tipos de error en Retrofit</div>
+          <div class="card-subtitle">Dificultad alta · Error handling</div>
+        </div>
+      </div>
+      <p>Analizá el siguiente código:</p>
+      <div class="code-block"><span class="kw">suspend fun</span> <span class="fn">getProducto</span>(id: Int): Producto {
+    <span class="kw">return</span> api.<span class="fn">getProducto</span>(id)   <span class="cmt">// retorna Producto (no Response&lt;Producto&gt;)</span>
+}</div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          a) El servidor devuelve HTTP 404. ¿Qué pasa? ¿Se lanza una excepción? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          <strong>Sí, se lanza <code>HttpException</code></strong>. Cuando Retrofit retorna directamente el tipo (<code>Producto</code> en vez de <code>Response&lt;Producto&gt;</code>), Retrofit interpreta cualquier respuesta que no sea 2xx como un error y lanza <code>HttpException</code> con el código de estado.<br><br>
+          Si en cambio retornara <code>Response&lt;Producto&gt;</code>, el 404 NO lanzaría excepción — habría que chequear <code>response.isSuccessful</code>.
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          b) El dispositivo no tiene internet. ¿Qué excepción se lanza? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          <code>IOException</code> (o su subclase <code>UnknownHostException</code>). Este tipo de error ocurre a nivel de conexión, antes de que llegue cualquier respuesta HTTP. No tiene código de estado porque nunca hubo comunicación con el servidor.
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          c) El servidor responde 200 pero el JSON tiene un campo diferente al esperado. ¿Qué pasa? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          Se lanza una excepción de conversión (ej: <code>JsonDataException</code> de Moshi, o <code>JsonSyntaxException</code> de Gson). El HTTP fue exitoso (200), pero la deserialización del body falló. Este es el tercer tipo de error.<br><br>
+          <strong>Resumen de los 3 tipos:</strong><br>
+          1. <strong>Conexión</strong> → <code>IOException</code> (sin internet, timeout, host no resuelve)<br>
+          2. <strong>HTTP</strong> → <code>HttpException</code> (4xx, 5xx — solo con tipo directo)<br>
+          3. <strong>Conversión</strong> → <code>JsonDataException</code> / <code>JsonSyntaxException</code> (JSON inválido)
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          d) ¿Por qué se recomienda crear Retrofit como singleton y no crear una instancia nueva por request? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          Porque <code>Retrofit.build()</code> es costoso: crea el cliente HTTP (OkHttp), el pool de conexiones, los convertidores JSON, el DNS resolver, y registra los interceptors. Hacerlo por request desperdiciaría memoria y tiempo, y descartaría el pool de conexiones (que reutiliza TCP connections, mejorando la performance). El singleton se crea una vez y se reutiliza durante toda la vida de la app.
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── UNIDAD 5: Sensores ─── -->
+    <div class="section-heading">Unidad 5 — Sensores</div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#E8F5E9">📡</div>
+        <div>
+          <div class="card-title">P8 — Tres problemas con sensores</div>
+          <div class="card-subtitle">Dificultad alta · Sensor lifecycle</div>
+        </div>
+      </div>
+      <p>Una app de fitness registra el acelerómetro con <code>SENSOR_DELAY_FASTEST</code> y registra el listener en <code>onCreate</code>:</p>
+      <div class="code-block"><span class="kw">override fun</span> <span class="fn">onCreate</span>(...) {
+    sensorManager.<span class="fn">registerListener</span>(
+        <span class="kw">this</span>, accel, SensorManager.<span class="bad">SENSOR_DELAY_FASTEST</span>
+    )   <span class="cmt">// ← Nunca se desregistra</span>
+}</div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          a) Identificá los tres problemas del código anterior <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          <strong>1. Memory leak:</strong> el listener se registra pero nunca se desregistra. Cuando la Activity se destruye (rotación, usuario navega), el <code>SensorManager</code> sigue teniendo una referencia a la Activity. La Activity no puede ser garbage-collected → memory leak.<br><br>
+          <strong>2. Alta frecuencia innecesaria:</strong> <code>SENSOR_DELAY_FASTEST</code> puede generar cientos de eventos por segundo. Para fitness, <code>SENSOR_DELAY_NORMAL</code> (200ms) es suficiente. El procesamiento de cada evento se hace en el <strong>hilo de UI</strong>, lo que puede causar jank y frames perdidos.<br><br>
+          <strong>3. Sensor activo en background:</strong> si el usuario va a home, el sensor sigue corriendo. Consume batería sin que el usuario esté usando la app.
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          b) ¿En qué callbacks del lifecycle debería ir register/unregister y por qué? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          <strong>register en <code>onResume</code></strong> — cuando la Activity está en primer plano y el usuario la está usando activamente.<br>
+          <strong>unregister en <code>onPause</code></strong> — cuando la Activity pierde el foco (dialog encima, va a home, navega a otra pantalla). El sensor se desactiva antes de que la Activity deje de ser visible.<br><br>
+          <strong>Regla espejo:</strong> register y unregister deben estar en callbacks simétricos. <code>onResume</code>/<code>onPause</code> son el par correcto para sensores (no <code>onCreate</code>/<code>onDestroy</code>, que dejaría el sensor activo en background).
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          c) ¿Cómo se testea un sensor sin dispositivo físico? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          Se inyecta una dependencia falsa (fake/mock) que implementa la misma interfaz que el sensor real. En el test, se llama manualmente a <code>onSensorChanged(fakeSensorEvent)</code> con valores conocidos y se verifica que el ViewModel/Activity reacciona correctamente. En el emulador de Android también se puede simular valores de acelerómetro desde la pestaña "Virtual sensors" del Extended Controls.
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── UNIDAD 6: Robótica ─── -->
+    <div class="section-heading">Unidad 6 — Robótica e HMI</div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#EDE7F6">🤖</div>
+        <div>
+          <div class="card-title">P9 — Patrón Gateway y diseño seguro</div>
+          <div class="card-subtitle">Dificultad media · Arquitectura robótica</div>
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          a) En un sistema de control de robot, el ViewModel llama directamente a la librería ROS 2. ¿Cuál es el problema? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          El mismo problema que con Repository: el ViewModel conoce detalles de implementación (que se usa ROS 2, cómo se publican mensajes, el nombre del topic). Si se cambia de ROS 2 a MQTT, habría que modificar el ViewModel.<br><br>
+          La solución es el <strong>patrón Gateway</strong>: una interfaz entre el ViewModel y la tecnología de comunicación. El ViewModel llama a <code>robotGateway.mover(velocidad)</code> sin saber si internamente usa ROS 2, MQTT o WebSocket.
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          b) ¿Qué significa "enviar no es ejecutar"? ¿Por qué es importante en robótica? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          Enviar un comando al robot (publicar un mensaje ROS 2) no garantiza que el robot lo ejecute. El mensaje puede perderse (red poco confiable), llegar tarde, o el robot puede estar en un estado donde no puede ejecutarlo. <br><br>
+          Por eso el diseño seguro incluye <strong>confirmación asíncrona</strong>: el robot envía un mensaje de vuelta confirmando que ejecutó la acción, o la app implementa un timeout que asume fallo si no hay confirmación. En sistemas de seguridad (robots cerca de personas) esto es crítico.
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          c) ¿Cuáles son las tres formas de comunicación en ROS 2 y cuándo se usa cada una? <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          <strong>Topics (pub/sub):</strong> streams continuos de datos (posición del robot, lecturas de sensores). Many-to-many. Sin confirmación de recepción.<br><br>
+          <strong>Services (request/response):</strong> operaciones discretas con respuesta (encender un gripper, consultar el estado de la batería). Sincrónico en términos de lógica (espera respuesta).<br><br>
+          <strong>Actions:</strong> tareas largas con feedback progresivo y posibilidad de cancelar (navegar a un punto, que puede tardar minutos). Incluye goal → feedback periódico → result final.
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── UNIDAD 7: Lectura de código ─── -->
+    <div class="section-heading">Unidad 7 — Lectura de repo desconocido (tipo examen)</div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#E3F2FD">🔍</div>
+        <div>
+          <div class="card-title">P10 — Diagnóstico en código desconocido</div>
+          <div class="card-subtitle">Dificultad muy alta · Sintoma → Concepto → Corrección</div>
+        </div>
+      </div>
+      <p>Alguien te da acceso a un repo de Android que nunca viste. La app tiene estos síntomas. Para cada uno: nombrá el concepto, explicá por qué ocurre y cómo lo corregirías.</p>
+
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          Síntoma A: "Al rotar el dispositivo, la app hace un request HTTP nuevo y el spinner aparece por 2 segundos cada vez" <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          <strong>Concepto:</strong> datos guardados en la Activity (o iniciados en <code>onCreate</code> sin ViewModel)<br>
+          <strong>Por qué:</strong> la rotación destruye y recrea la Activity → el fetch se reinicia<br>
+          <strong>Corrección:</strong> mover el fetch al <code>init</code> del ViewModel. El ViewModel sobrevive a la rotación.
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          Síntoma B: "La app consume el 100% de la CPU aunque el usuario no esté mirando la pantalla (en background)" <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          <strong>Concepto:</strong> sensor listener no desregistrado (memory/battery leak) o coroutine sin cancelar en background<br>
+          <strong>Por qué:</strong> el listener/coroutine sigue activo aunque la Activity/Fragment esté en <code>STOPPED</code><br>
+          <strong>Corrección:</strong> para sensores → mover unregister a <code>onPause</code>. Para coroutines → usar <code>repeatOnLifecycle(STARTED)</code> o <code>viewModelScope</code> que cancela al limpiar el ViewModel.
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          Síntoma C: "La app crashea con ANR (Application Not Responding) cuando tiene mala conexión" <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          <strong>Concepto:</strong> operación de red o I/O en el hilo principal<br>
+          <strong>Por qué:</strong> el hilo de UI se bloquea esperando la respuesta de red. Android detecta que el hilo principal no procesa eventos por más de 5 segundos → ANR<br>
+          <strong>Corrección:</strong> mover la operación a <code>Dispatchers.IO</code> usando <code>withContext(Dispatchers.IO) { ... }</code> o marcando la función con <code>suspend</code>.
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          Síntoma D: "Los datos persisten en la app aunque el usuario los haya borrado. Se actualiza solo si se cierra y reabre la app." <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          <strong>Concepto:</strong> el ViewModel observa el resultado de un fetch one-shot (suspend fun) en vez de observar el Flow de Room<br>
+          <strong>Por qué:</strong> si el ViewModel tiene <code>val items = repository.getItems()</code> donde <code>getItems()</code> es una <code>suspend fun</code>, solo carga una vez. Los cambios en Room (borrados) no se notifican.<br>
+          <strong>Corrección:</strong> el DAO debe retornar <code>Flow&lt;List&lt;Item&gt;&gt;</code>. Room automáticamente emite la lista actualizada cada vez que hay un INSERT, UPDATE o DELETE.
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Pregunta integradora ─── -->
+    <div class="section-heading">Pregunta integradora (tipo parcial completo)</div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#FFF3E0">📋</div>
+        <div>
+          <div class="card-title">P11 — App de agenda: análisis completo</div>
+          <div class="card-subtitle">Dificultad muy alta · Todas las unidades · 20 minutos</div>
+        </div>
+      </div>
+      <div class="alert warn"><span>⏱</span><div>Intentá hacer esta en papel, en 20 minutos, antes de ver las respuestas.</div></div>
+      <p style="margin-bottom:12px">Te dan acceso a una app de agenda de reuniones con este código:</p>
+      <div class="code-block"><span class="kw">class</span> <span class="fn">AgendaActivity</span> : AppCompatActivity() {
+    <span class="kw">private val</span> retrofit = Retrofit.Builder()           <span class="cmt">// (1)</span>
+        .baseUrl(<span class="str">"https://api.agenda.com/"</span>)
+        .addConverterFactory(GsonConverterFactory.<span class="fn">create</span>())
+        .<span class="fn">build</span>()
+
+    <span class="kw">private val</span> sensor: Sensor? = <span class="kw">null</span>
+
+    <span class="kw">override fun</span> <span class="fn">onCreate</span>(savedInstanceState: Bundle?) {
+        <span class="kw">super</span>.<span class="fn">onCreate</span>(savedInstanceState)
+        sensorManager.<span class="fn">registerListener</span>(<span class="kw">this</span>, sensor, SensorManager.SENSOR_DELAY_FASTEST)  <span class="cmt">// (2)</span>
+
+        Thread {                                                           <span class="cmt">// (3)</span>
+            <span class="kw">val</span> reuniones = retrofit.<span class="fn">create</span>(AgendaApi::<span class="kw">class</span>.java)
+                .<span class="fn">getReuniones</span>().<span class="fn">execute</span>().body()
+            runOnUiThread { <span class="fn">showReuniones</span>(reuniones) }
+        }.<span class="fn">start</span>()
+
+        searchBox.<span class="fn">addTextChangedListener</span> { q ->                           <span class="cmt">// (4)</span>
+            <span class="kw">val</span> result = db.<span class="fn">rawQuery</span>(<span class="str">"SELECT * FROM reuniones WHERE titulo LIKE '%$q%'"</span>, <span class="kw">null</span>)
+            <span class="fn">showReuniones</span>(result)
+        }
+    }
+}</div>
+      <div class="qa-item">
+        <div class="qa-q" onclick="toggleQA(this)">
+          Respuesta: analizá los 4 puntos marcados <span class="arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          <strong>(1) Retrofit creado como campo de instancia</strong><br>
+          Antipatrón: se crea un Retrofit nuevo por cada instancia de la Activity. Desperdicia recursos (el pool de conexiones se descarta y recrea con cada rotación). Solución: Retrofit como singleton (en Application o módulo de DI).<br><br>
+          <strong>(2) Sensor registrado en onCreate, sin unregister, con FASTEST</strong><br>
+          Tres problemas: (a) memory leak porque nunca se llama a <code>unregisterListener</code>; (b) el sensor sigue activo cuando la app va a background; (c) FASTEST genera demasiados eventos, saturia el hilo de UI. Solución: register en <code>onResume</code>, unregister en <code>onPause</code>, cambiar a <code>SENSOR_DELAY_NORMAL</code>.<br><br>
+          <strong>(3) <code>Thread { ... .execute() }</code> — no usa coroutines</strong><br>
+          Problemas: (a) <code>Thread</code> no está gestionado por el lifecycle → puede seguir corriendo aunque la Activity se destruya; (b) <code>.execute()</code> es bloqueante en el thread; (c) si la Activity se destruye antes del <code>runOnUiThread</code>, puede crashear. Solución: usar <code>viewModelScope.launch { api.getReuniones() }</code> con Retrofit suspend.<br><br>
+          <strong>(4) SQL injection en el TextChangedListener</strong><br>
+          La entrada del usuario se concatena directamente en la query SQL. Un input como <code>' OR '1'='1</code> retorna todas las reuniones. Solución: DAO con <code>@Query("... LIKE :busqueda")</code> y parámetros binding.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.getElementById(id).classList.add('active');
